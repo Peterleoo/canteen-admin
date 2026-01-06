@@ -11,7 +11,6 @@ import {
     Form,
     InputNumber,
     Switch,
-    Upload,
     message,
     Popconfirm,
 } from 'antd';
@@ -20,7 +19,6 @@ import {
     EditOutlined,
     DeleteOutlined,
     SearchOutlined,
-    UploadOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { Product, Category } from '../../types/index';

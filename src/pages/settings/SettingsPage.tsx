@@ -251,7 +251,7 @@ const SettingsPage: React.FC = () => {
                             onFinish={onConfigFinish}
                             style={{ maxWidth: 800, marginTop: 16 }}
                         >
-                            <Divider orientation="left"><ClockCircleOutlined /> 营业时间</Divider>
+                            <Divider orientation={"left" as any}><ClockCircleOutlined /> 营业时间</Divider>
                             <Form.Item
                                 name="businessHours"
                                 label="食堂营业时段"
@@ -260,7 +260,7 @@ const SettingsPage: React.FC = () => {
                                 <TimePicker.RangePicker format="HH:mm" style={{ width: 300 }} />
                             </Form.Item>
 
-                            <Divider orientation="left"><WalletOutlined /> 配送规则</Divider>
+                            <Divider orientation={"left" as any}><WalletOutlined /> 配送规则</Divider>
                             <Row gutter={24}>
                                 <Col span={12}>
                                     <Form.Item name="deliveryFee" label="基础配送费 (¥)" rules={[{ required: true }]}>
@@ -274,7 +274,7 @@ const SettingsPage: React.FC = () => {
                                 </Col>
                             </Row>
 
-                            <Divider orientation="left"><NotificationOutlined /> 库存与通知</Divider>
+                            <Divider orientation={"left" as any}><NotificationOutlined /> 库存与通知</Divider>
                             <Row gutter={24}>
                                 <Col span={12}>
                                     <Form.Item name="stockAlertThreshold" label="全局库存预警阈值" rules={[{ required: true }]}>
@@ -288,7 +288,7 @@ const SettingsPage: React.FC = () => {
                                 </Col>
                             </Row>
 
-                            <Divider orientation="left"><SafetyCertificateOutlined /> 系统维护</Divider>
+                            <Divider orientation={"left" as any}><SafetyCertificateOutlined /> 系统维护</Divider>
                             <Form.Item name="maintenanceMode" label="维护模式 (仅管理员可访问)" valuePropName="checked">
                                 <Switch />
                             </Form.Item>

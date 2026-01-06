@@ -1,30 +1,33 @@
 // 用户角色
-export enum Role {
-    SUPER_ADMIN = 'SUPER_ADMIN',
-    ADMIN = 'ADMIN',
-    CANTEEN_MANAGER = 'CANTEEN_MANAGER',
-    OPERATOR = 'OPERATOR',
-    VIEWER = 'VIEWER'
-}
+export const Role = {
+    SUPER_ADMIN: 'SUPER_ADMIN',
+    ADMIN: 'ADMIN',
+    CANTEEN_MANAGER: 'CANTEEN_MANAGER',
+    OPERATOR: 'OPERATOR',
+    VIEWER: 'VIEWER'
+} as const;
+export type Role = typeof Role[keyof typeof Role];
 
 // 商品分类
-export enum Category {
-    POPULAR = '人气热销',
-    MAINS = '主食',
-    SNACKS = '小吃',
-    DRINKS = '饮品',
-    COMBOS = '套餐',
-}
+export const Category = {
+    POPULAR: '人气热销',
+    MAINS: '主食',
+    SNACKS: '小吃',
+    DRINKS: '饮品',
+    COMBOS: '套餐',
+} as const;
+export type Category = typeof Category[keyof typeof Category];
 
 // 订单状态
-export enum OrderStatus {
-    PENDING = '待接单',
-    PREPARING = '准备中',
-    DELIVERING = '配送中',
-    READY_FOR_PICKUP = '待自提',
-    COMPLETED = '已完成',
-    CANCELLED = '已取消'
-}
+export const OrderStatus = {
+    PENDING: '待接单',
+    PREPARING: '准备中',
+    DELIVERING: '配送中',
+    READY_FOR_PICKUP: '待自提',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消'
+} as const;
+export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
 
 // 配送方式
 export type DeliveryMethod = 'PICKUP' | 'DELIVERY';
