@@ -152,7 +152,7 @@ export const ProductListPage: React.FC = () => {
                     </Button>
                     <Popconfirm
                         title="确定要删除这个商品吗?"
-                        onConfirm={() => handleDelete(record.id)}
+                        onConfirm={() => handleDelete(String(record.id))}
                         okText="确定"
                         cancelText="取消"
                     >
@@ -364,8 +364,8 @@ export const ProductListPage: React.FC = () => {
                     initialValues={{
                         status: 'ACTIVE',
                         stock: 0,
-                        isRecommended: false,
-                        isFeatured: false,
+                        is_recommended: false,
+                        is_featured: false,
                     }}
                 >
                     <Form.Item
@@ -411,7 +411,7 @@ export const ProductListPage: React.FC = () => {
                             />
                         </Form.Item>
 
-                        <Form.Item label="原价" name="originalPrice">
+                        <Form.Item label="原价" name="original_price">
                             <InputNumber
                                 min={0}
                                 precision={2}
@@ -431,7 +431,7 @@ export const ProductListPage: React.FC = () => {
                             <InputNumber min={0} style={{ width: 200 }} placeholder="请输入库存" />
                         </Form.Item>
 
-                        <Form.Item label="库存预警" name="stockAlert">
+                        <Form.Item label="库存预警" name="stock_alert">
                             <InputNumber min={0} style={{ width: 200 }} placeholder="选填" />
                         </Form.Item>
                     </Space>
@@ -453,11 +453,11 @@ export const ProductListPage: React.FC = () => {
                     </Form.Item>
 
                     <Space size="large">
-                        <Form.Item label="是否推荐" name="isRecommended" valuePropName="checked">
+                        <Form.Item label="是否推荐" name="is_recommended" valuePropName="checked">
                             <Switch />
                         </Form.Item>
 
-                        <Form.Item label="今日疯抢" name="isFeatured" valuePropName="checked">
+                        <Form.Item label="今日疯抢" name="is_featured" valuePropName="checked">
                             <Switch />
                         </Form.Item>
 

@@ -15,9 +15,10 @@ const mockAdminUser: AdminUser = {
 };
 
 // Mock 商品数据
+// Mock 商品数据
 let mockProducts: Product[] = [
     {
-        id: '1',
+        id: 1,
         name: '川味宫保鸡丁',
         description: '精选嫩滑鸡粒，搭配酥脆花生与正宗川味干辣椒，酱香浓郁，回味微甜。',
         price: 12.50,
@@ -27,13 +28,13 @@ let mockProducts: Product[] = [
         sales: 1205,
         tags: ['香辣', '招牌'],
         status: 'ACTIVE',
-        isRecommended: true,
-        isFeatured: false,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        is_recommended: true,
+        is_featured: false,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
     },
     {
-        id: '2',
+        id: 2,
         name: '台式秘制卤肉饭',
         description: '慢火细熬手切五花肉，油亮肥美不松散，浸润每一粒精选香米。',
         price: 15.00,
@@ -43,12 +44,12 @@ let mockProducts: Product[] = [
         sales: 890,
         tags: ['销量王'],
         status: 'ACTIVE',
-        isRecommended: true,
-        createdAt: '2024-01-02T00:00:00Z',
-        updatedAt: '2024-01-02T00:00:00Z',
+        is_recommended: true,
+        created_at: '2024-01-02T00:00:00Z',
+        updated_at: '2024-01-02T00:00:00Z',
     },
     {
-        id: '3',
+        id: 3,
         name: '田园清炒时蔬',
         description: '每日清晨直采时令鲜蔬，极致火候快炒，保留食材原本的清脆与鲜甜。',
         price: 9.00,
@@ -58,11 +59,11 @@ let mockProducts: Product[] = [
         sales: 450,
         tags: ['素食', '健康'],
         status: 'ACTIVE',
-        createdAt: '2024-01-03T00:00:00Z',
-        updatedAt: '2024-01-03T00:00:00Z',
+        created_at: '2024-01-03T00:00:00Z',
+        updated_at: '2024-01-03T00:00:00Z',
     },
     {
-        id: '4',
+        id: 4,
         name: '私房红烧牛肉面',
         description: '12小时大骨高汤熬制，大块牛腩入口即化，手工宽面劲道十足。',
         price: 14.00,
@@ -72,12 +73,12 @@ let mockProducts: Product[] = [
         sales: 2100,
         tags: ['能量餐'],
         status: 'ACTIVE',
-        isFeatured: true,
-        createdAt: '2024-01-04T00:00:00Z',
-        updatedAt: '2024-01-04T00:00:00Z',
+        is_featured: true,
+        created_at: '2024-01-04T00:00:00Z',
+        updated_at: '2024-01-04T00:00:00Z',
     },
     {
-        id: '5',
+        id: 5,
         name: '金黄脆皮春卷',
         description: '外皮金黄酥脆，咬下一口咔嚓作响，内馅包含木耳、香菇等多种鲜美菌菇。',
         price: 5.00,
@@ -87,11 +88,11 @@ let mockProducts: Product[] = [
         sales: 600,
         tags: ['酥脆'],
         status: 'ACTIVE',
-        createdAt: '2024-01-05T00:00:00Z',
-        updatedAt: '2024-01-05T00:00:00Z',
+        created_at: '2024-01-05T00:00:00Z',
+        updated_at: '2024-01-05T00:00:00Z',
     },
     {
-        id: '6',
+        id: 6,
         name: '新奥尔良炸鸡翅',
         description: '独家秘制腌料入味，外皮焦亮，肉质鲜美多汁，撕开即见诱人肉汁。',
         price: 8.00,
@@ -101,11 +102,11 @@ let mockProducts: Product[] = [
         sales: 320,
         tags: ['人气'],
         status: 'ACTIVE',
-        createdAt: '2024-01-06T00:00:00Z',
-        updatedAt: '2024-01-06T00:00:00Z',
+        created_at: '2024-01-06T00:00:00Z',
+        updated_at: '2024-01-06T00:00:00Z',
     },
     {
-        id: '7',
+        id: 7,
         name: '爆汁手打柠檬茶',
         description: '精选广东香水柠檬，暴力手打出汁，茶底醇厚，清爽解腻的最佳拍档。',
         price: 4.00,
@@ -115,11 +116,11 @@ let mockProducts: Product[] = [
         sales: 1500,
         tags: ['冰镇'],
         status: 'ACTIVE',
-        createdAt: '2024-01-07T00:00:00Z',
-        updatedAt: '2024-01-07T00:00:00Z',
+        created_at: '2024-01-07T00:00:00Z',
+        updated_at: '2024-01-07T00:00:00Z',
     },
     {
-        id: '8',
+        id: 8,
         name: '经典醇香珍珠奶茶',
         description: '进口锡兰红茶底，混合新西兰牧场牛乳，珍珠Q弹软糯，甜而不腻。',
         price: 6.00,
@@ -129,11 +130,11 @@ let mockProducts: Product[] = [
         sales: 980,
         tags: ['甜蜜'],
         status: 'ACTIVE',
-        createdAt: '2024-01-08T00:00:00Z',
-        updatedAt: '2024-01-08T00:00:00Z',
+        created_at: '2024-01-08T00:00:00Z',
+        updated_at: '2024-01-08T00:00:00Z',
     },
     {
-        id: '9',
+        id: 9,
         name: '元气职人午餐套餐',
         description: '包含私房牛肉面+脆皮春卷+手打柠檬茶。今日份的加油站！',
         price: 22.00,
@@ -143,14 +144,14 @@ let mockProducts: Product[] = [
         sales: 1800,
         tags: ['热销', '推荐'],
         status: 'ACTIVE',
-        isCombo: true,
-        isRecommended: true,
-        isFeatured: true,
-        createdAt: '2024-01-09T00:00:00Z',
-        updatedAt: '2024-01-09T00:00:00Z',
+        is_combo: true,
+        is_recommended: true,
+        is_featured: true,
+        created_at: '2024-01-09T00:00:00Z',
+        updated_at: '2024-01-09T00:00:00Z',
     },
     {
-        id: '10',
+        id: 10,
         name: '测试下架商品',
         description: '这是一个已下架的测试商品',
         price: 10.00,
@@ -160,8 +161,8 @@ let mockProducts: Product[] = [
         sales: 0,
         tags: [],
         status: 'INACTIVE',
-        createdAt: '2024-01-10T00:00:00Z',
-        updatedAt: '2024-01-10T00:00:00Z',
+        created_at: '2024-01-10T00:00:00Z',
+        updated_at: '2024-01-10T00:00:00Z',
     },
 ];
 
@@ -268,10 +269,10 @@ export const mockGetProducts = (params: ProductQueryParams) => {
 };
 
 // 获取商品详情
-export const mockGetProduct = (id: string) => {
+export const mockGetProductDetail = (id: string) => {
     return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            const product = mockProducts.find(p => p.id === id);
+            const product = mockProducts.find(p => p.id === Number(id));
             if (product) {
                 resolve({
                     code: 200,
@@ -293,26 +294,25 @@ export const mockCreateProduct = (data: Partial<Product>) => {
     return new Promise<any>((resolve) => {
         setTimeout(() => {
             const newProduct: Product = {
-                id: String(Date.now()),
+                id: Date.now(),
                 name: data.name!,
                 description: data.description!,
                 price: data.price!,
-                originalPrice: data.originalPrice,
+                original_price: data.original_price,
                 category: data.category!,
                 image: data.image!,
                 images: data.images,
                 stock: data.stock!,
-                stockAlert: data.stockAlert,
+                stock_alert: data.stock_alert,
                 sales: 0,
                 tags: data.tags || [],
                 status: data.status || 'ACTIVE',
-                isRecommended: data.isRecommended || false,
-                isFeatured: data.isFeatured || false,
-                sortOrder: data.sortOrder || 0,
-                isCombo: data.isCombo || false,
-                comboItems: data.comboItems,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                is_recommended: data.is_recommended || false,
+                is_featured: data.is_featured || false,
+                sort_order: data.sort_order || 0,
+                is_combo: data.is_combo || false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
             };
 
             mockProducts.unshift(newProduct);
@@ -330,12 +330,12 @@ export const mockCreateProduct = (data: Partial<Product>) => {
 export const mockUpdateProduct = (id: string, data: Partial<Product>) => {
     return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            const index = mockProducts.findIndex(p => p.id === id);
+            const index = mockProducts.findIndex(p => p.id === Number(id));
             if (index !== -1) {
                 mockProducts[index] = {
                     ...mockProducts[index],
                     ...data,
-                    updatedAt: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
                 };
                 resolve({
                     code: 200,
@@ -356,7 +356,7 @@ export const mockUpdateProduct = (id: string, data: Partial<Product>) => {
 export const mockDeleteProduct = (id: string) => {
     return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            const index = mockProducts.findIndex(p => p.id === id);
+            const index = mockProducts.findIndex(p => p.id === Number(id));
             if (index !== -1) {
                 mockProducts.splice(index, 1);
                 resolve({
@@ -379,10 +379,10 @@ export const mockBatchUpdateProductStatus = (ids: string[], status: 'ACTIVE' | '
     return new Promise<any>((resolve) => {
         setTimeout(() => {
             ids.forEach(id => {
-                const index = mockProducts.findIndex(p => p.id === id);
+                const index = mockProducts.findIndex(p => p.id === Number(id));
                 if (index !== -1) {
                     mockProducts[index].status = status;
-                    mockProducts[index].updatedAt = new Date().toISOString();
+                    mockProducts[index].updated_at = new Date().toISOString();
                 }
             });
 
@@ -414,7 +414,7 @@ let mockOrders: Order[] = [
         user: { id: 'U001', name: '张三', phone: '13812345678', avatar: '', status: 'ACTIVE', totalOrders: 5, totalSpent: 260, createdAt: '2024-01-01' },
         canteenId: '1',
         items: [
-            { id: '1', name: '川味宫保鸡丁', quantity: 1, price: 12.5, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=800', stock: 50, sales: 1205, status: 'ACTIVE' } as any
+            { id: 1, name: '川味宫保鸡丁', quantity: 1, price: 12.5, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=800', stock: 50, sales: 1205, status: 'ACTIVE' } as any
         ],
         subtotal: 12.5,
         deliveryFee: 0,
@@ -430,7 +430,7 @@ let mockOrders: Order[] = [
         user: { id: 'U002', name: '李四', phone: '13987654321', avatar: '', status: 'ACTIVE', totalOrders: 2, totalSpent: 80, createdAt: '2024-01-02' },
         canteenId: '1',
         items: [
-            { id: '4', name: '私房红烧牛肉面', quantity: 2, price: 14.0, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=800', stock: 25, sales: 2100, status: 'ACTIVE' } as any
+            { id: 4, name: '私房红烧牛肉面', quantity: 2, price: 14.0, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=800', stock: 25, sales: 2100, status: 'ACTIVE' } as any
         ],
         subtotal: 28.0,
         deliveryFee: 5,
@@ -447,8 +447,8 @@ let mockOrders: Order[] = [
         user: { id: 'U003', name: '王五', phone: '13700001111', avatar: '', status: 'ACTIVE', totalOrders: 10, totalSpent: 1200, createdAt: '2023-12-15' },
         canteenId: '1',
         items: [
-            { id: '9', name: '元气职人午餐套餐', quantity: 1, price: 22.0, category: Category.COMBOS, image: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=800', stock: 50, sales: 1800, status: 'ACTIVE' } as any,
-            { id: '7', name: '爆汁手打柠檬茶', quantity: 1, price: 4.0, category: Category.DRINKS, image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800', stock: 200, sales: 1500, status: 'ACTIVE' } as any
+            { id: 9, name: '元气职人午餐套餐', quantity: 1, price: 22.0, category: Category.COMBOS, image: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=800', stock: 50, sales: 1800, status: 'ACTIVE' } as any,
+            { id: 7, name: '爆汁手打柠檬茶', quantity: 1, price: 4.0, category: Category.DRINKS, image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800', stock: 200, sales: 1500, status: 'ACTIVE' } as any
         ],
         subtotal: 26.0,
         deliveryFee: 0,
@@ -522,6 +522,47 @@ export const mockUpdateOrderStatus = (id: string, status: OrderStatus) => {
                     message: '订单不存在',
                 });
             }
+        }, 300);
+    });
+};
+
+// 获取详细订单
+export const mockGetOrderDetail = (id: string) => {
+    return new Promise<any>((resolve, reject) => {
+        setTimeout(() => {
+            const order = mockOrders.find(o => o.id === id);
+            if (order) {
+                resolve({
+                    code: 200,
+                    message: '成功',
+                    data: order,
+                });
+            } else {
+                reject({
+                    code: 404,
+                    message: '订单不存在',
+                });
+            }
+        }, 300);
+    });
+};
+
+// 批量取消订单
+export const mockBatchCancelOrders = (ids: string[], reason: string) => {
+    return new Promise<any>((resolve) => {
+        setTimeout(() => {
+            mockOrders.forEach(o => {
+                if (ids.includes(o.id)) {
+                    o.status = OrderStatus.CANCELLED;
+                    (o as any).cancelReason = reason;
+                    o.updatedAt = new Date().toISOString();
+                }
+            });
+            resolve({
+                code: 200,
+                message: '批量取消成功',
+                data: null,
+            });
         }, 300);
     });
 };
@@ -981,7 +1022,7 @@ let mockPromotions: any[] = [
         type: 'BANNER',
         link: '/products?category=饮品',
         status: 'ACTIVE',
-        sortOrder: 1,
+        sort_order: 1,
         createdAt: '2026-01-01 08:00:00'
     },
     {
@@ -991,7 +1032,7 @@ let mockPromotions: any[] = [
         image: 'https://images.unsplash.com/photo-155524362d-1621351c96da?w=800',
         type: 'ACTIVITY',
         status: 'ACTIVE',
-        sortOrder: 2,
+        sort_order: 2,
         startTime: '2026-01-01 00:00:00',
         endTime: '2026-12-31 23:59:59',
         createdAt: '2026-01-01 00:00:00'
@@ -1132,12 +1173,12 @@ let mockStaffs: any[] = [
 ];
 
 let mockSystemConfig = {
-    businessHours: ['08:00', '20:00'],
-    deliveryFee: 5,
-    freeDeliveryThreshold: 30,
-    stockAlertThreshold: 20,
-    autoAcceptOrder: true,
-    maintenanceMode: false
+    business_hours: ['08:00', '20:00'],
+    delivery_fee: 5,
+    free_delivery_threshold: 30,
+    stock_alert_threshold: 20,
+    auto_accept_order: true,
+    maintenance_mode: false
 };
 
 // 获取员工列表

@@ -18,6 +18,8 @@ export const Category = {
 } as const;
 export type Category = typeof Category[keyof typeof Category];
 
+
+
 // 订单状态
 export const OrderStatus = {
     PENDING: '待接单',
@@ -45,26 +47,26 @@ export interface ComboItem {
 
 // 商品
 export interface Product {
-    id: string;
+    id: number;              // 数据库 int4 对应 number
     name: string;
     description: string;
     price: number;
-    originalPrice?: number;
-    category: Category;
+    original_price?: number; // 改为下划线
+    category: string;        // 存储分类名称
     image: string;
     images?: string[];
     stock: number;
-    stockAlert?: number;
+    stock_alert?: number;    // 改为下划线
     sales: number;
     tags?: string[];
     status: ProductStatus;
-    isRecommended?: boolean;
-    isFeatured?: boolean;
-    sortOrder?: number;
-    isCombo?: boolean;
-    comboItems?: ComboItem[];
-    createdAt?: string;
-    updatedAt?: string;
+    is_recommended?: boolean; // 改为下划线
+    is_featured?: boolean;    // 改为下划线
+    is_combo?: boolean;       // 改为下划线
+    sort_order?: number;      // 改为下划线
+    created_at?: string;      // 改为下划线
+    updated_at?: string;      // 改为下划线
+    // combo_items 这种复杂的关联建议根据实际建表情况调整
 }
 
 // 购物车商品
@@ -222,10 +224,10 @@ export interface Promotion {
     type: 'BANNER' | 'ACTIVITY';
     link?: string;
     status: 'ACTIVE' | 'INACTIVE';
-    sortOrder: number;
-    startTime?: string;
-    endTime?: string;
-    createdAt: string;
+    sort_order: number;
+    start_time?: string;
+    end_time?: string;
+    created_at: string;
 }
 
 // 权限点

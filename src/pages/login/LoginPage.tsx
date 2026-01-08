@@ -4,18 +4,20 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { login } from '../../api/auth';
-import type { LoginParams } from '../../api/auth';
 import './LoginPage.css';
 
 export const LoginPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { login: setAuth } = useAuthStore();
+    const isMock = import.meta.env.VITE_USE_MOCK !== 'false';
 
-    const onFinish = async (values: LoginParams) => {
+    const onFinish = async (values: any) => {
         setLoading(true);
         try {
-            const response = await login(values);
+            // 在 mock 模式下，将 email 字段映射为 username 传给 login
+            const loginData = isMock ? { ...values, username: values.email } : values;
+            const response = await login(loginData);
             const { token, user } = response.data;
 
             setAuth(token, user);
@@ -44,12 +46,15 @@ export const LoginPage: React.FC = () => {
                     size="large"
                 >
                     <Form.Item
-                        name="username"
-                        rules={[{ required: true, message: '请输入用户名' }]}
+                        name="email"
+                        rules={[
+                            { required: true, message: `请输入${isMock ? '用户名' : '邮箱'}` },
+                            ...(isMock ? [] : [{ type: 'email' as const, message: '请输入有效的邮箱地址' }])
+                        ]}
                     >
                         <Input
                             prefix={<UserOutlined />}
-                            placeholder="用户名"
+                            placeholder={isMock ? '用户名' : '邮箱'}
                         />
                     </Form.Item>
 
@@ -76,7 +81,11 @@ export const LoginPage: React.FC = () => {
                 </Form>
 
                 <div className="login-footer">
-                    <p>默认账号: admin / admin123</p>
+                    {isMock ? (
+                        <p>本地开发模式 (Mock 数据)</p>
+                    ) : (
+                        <p>通过 Supabase Auth 进行身份验证</p>
+                    )}
                 </div>
             </Card>
         </div>

@@ -105,8 +105,8 @@ const PromotionManagementPage: React.FC = () => {
         },
         {
             title: '排序',
-            dataIndex: 'sortOrder',
-            key: 'sortOrder',
+            dataIndex: 'sort_order',
+            key: 'sort_order',
         },
         {
             title: '显示状态',
@@ -160,7 +160,7 @@ const PromotionManagementPage: React.FC = () => {
                     <Form.Item name="link" label="跳转链接">
                         <Input placeholder="如：/products?category=主食" />
                     </Form.Item>
-                    <Form.Item name="sortOrder" label="排序权重">
+                    <Form.Item name="sort_order" label="排序权重">
                         <InputNumber style={{ width: '100%' }} />
                     </Form.Item>
                 </Form>

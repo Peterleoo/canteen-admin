@@ -41,9 +41,9 @@ const SystemConfigPage: React.FC = () => {
             const res = await getSystemConfig();
             form.setFieldsValue({
                 ...res.data,
-                businessHours: [
-                    dayjs(res.data.businessHours[0], 'HH:mm'),
-                    dayjs(res.data.businessHours[1], 'HH:mm')
+                business_hours: [
+                    dayjs(res.data.business_hours[0], 'HH:mm'),
+                    dayjs(res.data.business_hours[1], 'HH:mm')
                 ]
             });
         } catch (error) {
@@ -58,9 +58,9 @@ const SystemConfigPage: React.FC = () => {
         try {
             const payload = {
                 ...values,
-                businessHours: [
-                    values.businessHours[0].format('HH:mm'),
-                    values.businessHours[1].format('HH:mm')
+                business_hours: [
+                    values.business_hours[0].format('HH:mm'),
+                    values.business_hours[1].format('HH:mm')
                 ]
             };
             await updateSystemConfig(payload);
@@ -84,7 +84,7 @@ const SystemConfigPage: React.FC = () => {
                 >
                     <Divider orientation={"left" as any}><ClockCircleOutlined /> 营业时间</Divider>
                     <Form.Item
-                        name="businessHours"
+                        name="business_hours"
                         label="食堂营业时段"
                         rules={[{ required: true, message: '请选择营业时间' }]}
                     >
@@ -94,12 +94,12 @@ const SystemConfigPage: React.FC = () => {
                     <Divider orientation={"left" as any}><WalletOutlined /> 配送规则</Divider>
                     <Row gutter={24}>
                         <Col span={12}>
-                            <Form.Item name="deliveryFee" label="基础配送费 (¥)" rules={[{ required: true }]}>
+                            <Form.Item name="delivery_fee" label="基础配送费 (¥)" rules={[{ required: true }]}>
                                 <InputNumber style={{ width: '100%' }} min={0} />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="freeDeliveryThreshold" label="免配送费门槛 (¥)" rules={[{ required: true }]}>
+                            <Form.Item name="free_delivery_threshold" label="免配送费门槛 (¥)" rules={[{ required: true }]}>
                                 <InputNumber style={{ width: '100%' }} min={0} />
                             </Form.Item>
                         </Col>
@@ -108,19 +108,19 @@ const SystemConfigPage: React.FC = () => {
                     <Divider orientation={"left" as any}><NotificationOutlined /> 库存与通知</Divider>
                     <Row gutter={24}>
                         <Col span={12}>
-                            <Form.Item name="stockAlertThreshold" label="全局库存预警阈值" rules={[{ required: true }]}>
+                            <Form.Item name="stock_alert_threshold" label="全局库存预警阈值" rules={[{ required: true }]}>
                                 <InputNumber style={{ width: '100%' }} min={1} />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
-                            <Form.Item name="autoAcceptOrder" label="自动接单模式" valuePropName="checked">
+                            <Form.Item name="auto_accept_order" label="自动接单模式" valuePropName="checked">
                                 <Switch />
                             </Form.Item>
                         </Col>
                     </Row>
 
                     <Divider orientation={"left" as any}><SafetyCertificateOutlined /> 系统维护</Divider>
-                    <Form.Item name="maintenanceMode" label="维护模式 (仅管理员可访问)" valuePropName="checked">
+                    <Form.Item name="maintenance_mode" label="维护模式 (仅管理员可访问)" valuePropName="checked">
                         <Switch />
                     </Form.Item>
 
