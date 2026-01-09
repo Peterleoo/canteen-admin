@@ -21,15 +21,19 @@ export type Category = typeof Category[keyof typeof Category];
 
 
 // 订单状态
+// types/index.ts
+
+// 1. 值必须对应数据库里的枚举字符串
 export const OrderStatus = {
-    PENDING: '待接单',
-    PREPARING: '准备中',
-    DELIVERING: '配送中',
-    READY_FOR_PICKUP: '待自提',
-    COMPLETED: '已完成',
-    CANCELLED: '已取消'
+    PENDING: 'PENDING',
+    PREPARING: 'PREPARING',
+    DELIVERING: 'DELIVERING',
+    READY_FOR_PICKUP: 'READY_FOR_PICKUP',
+    COMPLETED: 'COMPLETED',
+    CANCELLED: 'CANCELLED'
 } as const;
-export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
+
+export type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus];
 
 // 配送方式
 export type DeliveryMethod = 'PICKUP' | 'DELIVERY';
@@ -77,14 +81,15 @@ export interface CartItem extends Product {
 // 用户
 export interface User {
     id: string;
-    name: string;
-    phone: string;
+    username: string;    // 修复：从 name 改为 username
+    email: string;       // 修复：确保有 email 字段
     avatar?: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'BANNED';
-    totalOrders: number;
-    totalSpent: number;
-    lastOrderAt?: string;
-    createdAt: string;
+    phone?: string;
+    status: 'ACTIVE' | 'BANNED' | 'INACTIVE' | 'active' | 'banned'; // 兼容大小写
+    created_at: string;  // 修复：从 createdAt 改为 created_at
+    // 统计字段（可选，根据你的业务逻辑）
+    total_orders?: number;
+    total_spent?: number;
 }
 
 // 地址
@@ -98,44 +103,75 @@ export interface Address {
     isDefault: boolean;
 }
 
-// 订单
+// src/types/index.ts
+
 export interface Order {
-    id: string;
-    userId: string;
-    user?: User;
-    canteenId: string;
-    canteen?: Canteen;
-    items: CartItem[];
-    subtotal: number;
-    deliveryFee: number;
-    total: number;
-    status: OrderStatus;
-    deliveryMethod: DeliveryMethod;
-    addressId?: string;
-    address?: Address;
+    id: number;              // 数据库中是 integer，所以这里用 number
+    user_id: string;         // 对应数据库 user_id (UUID)
+    profiles?: User;         // 对应 Supabase 关联查询 profiles(*) 返回的对象
+    canteen_id: number;      // 对应数据库 canteen_id
+    canteens?: Canteen;      // 对应 Supabase 关联查询 canteens(*) 返回的对象
+
+    // 订单商品清单
+    order_items?: OrderItem[]; // 对应关联表 order_items(*)
+
+    // 金额相关（确保与数据库字段名一致）
+    // 如果数据库只有 total 字段，则其他字段设为可选或补齐数据库字段
+    subtotal?: number;
+    packing_fee?: number;    // 新增：打包费
+    delivery_fee?: number;   // 数据库建议改为 delivery_fee
+    discount_amount?: number;// 新增：优惠金额
+    total: number;           // 对应数据库 total
+
+    status: OrderStatusType;
+    delivery_method: 'DELIVERY' | 'PICKUP'; // 对应数据库下划线风格
+
+    address_id?: string;
+    address_detail?: string; // 建议直接存储地址快照，防止关联表数据被删
+
     remark?: string;
-    estimatedTime?: string;
-    actualTime?: string;
-    cancelReason?: string;
-    createdAt: string;
-    updatedAt: string;
+    cancel_reason?: string;
+
+    created_at: string;      // 对应数据库 created_at
+    updated_at: string;      // 对应数据库 updated_at
 }
 
-// 食堂
+// 补充：订单项接口
+export interface OrderItem {
+    id: number;
+    order_id: number;
+    product_name: string;
+    price: number;
+    quantity: number;
+    created_at: string;
+}
+
+// 食堂 (Canteen) 接口修改建议
 export interface Canteen {
     id: string;
     name: string;
     address: string;
-    distance: string;
+    distance?: string; // 距离通常是计算出来的，建议设为可选
     status: 'OPEN' | 'CLOSED' | 'BUSY';
-    contactPhone?: string;
+
+    // 基础管理信息
+    contact_phone?: string;  // 对应数据库 contact_phone
     manager?: string;
     capacity?: number;
-    currentOrders?: number;
-    deliveryEnabled?: boolean;
-    deliveryRadius?: number;
-    deliveryFee?: number;
-    freeDeliveryThreshold?: number;
+    current_orders?: number; // 对应数据库 current_orders
+
+    // --- 配送核心配置 ---
+    is_delivery_active: boolean;      // 配送服务总开关 (开启/关闭)
+    delivery_radius: number;          // 配送半径 (公里)
+    min_delivery_amount: number;      // 起送金额 (满多少才送)
+    delivery_fee: number;             // 基础配送费
+    free_delivery_threshold: number;  // 免配送费阈值 (满多少免运费)
+
+    // --- 费用相关补充 ---
+    default_packaging_fee: number;    // 默认打包费 (新增字段)
+
+    updated_at?: string;
+    created_at?: string;
 }
 
 // 管理员用户

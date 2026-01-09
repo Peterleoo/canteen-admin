@@ -46,9 +46,13 @@ export const UserListPage: React.FC = () => {
                 pageSize,
                 keyword,
             });
-            setUsers(response.data.data);
-            setTotal(response.data.total);
+            // 调试神器：直接看结构
+            console.log('完整的接口返回:', response);
+            // 修正 1: 根据 api/user.ts 的返回结构，取 response.data.list
+            setUsers(response.data.data || []);
+            setTotal(response.data.total || 0);
         } catch (error) {
+            console.error(error);
             message.error('加载用户列表失败');
         } finally {
             setLoading(false);
@@ -59,13 +63,15 @@ export const UserListPage: React.FC = () => {
         loadUsers();
     }, [page, pageSize, keyword]);
 
-    const handleStatusChange = async (user: User) => {
-        const newStatus = user.status === 'BANNED' ? 'ACTIVE' : 'BANNED';
+    const handleStatusChange = async (user: any) => {
+        // 兼容处理：Supabase 存储的可能是小写，判断时统一转大写
+        const currentStatus = (user.status || 'ACTIVE').toUpperCase();
+        const newStatus = currentStatus === 'BANNED' ? 'ACTIVE' : 'BANNED';
         const actionText = newStatus === 'BANNED' ? '拉黑' : '解除拉黑';
 
         Modal.confirm({
             title: `确定要${actionText}该用户吗？`,
-            content: `用户：${user.name} (${user.phone})`,
+            content: `用户：${user.username || '未知'} (${user.email || '无邮箱'})`,
             okText: '确定',
             cancelText: '取消',
             onOk: async () => {
@@ -99,84 +105,83 @@ export const UserListPage: React.FC = () => {
             title: '用户信息',
             key: 'user',
             width: 200,
-            render: (_, record) => (
+            render: (_, record: any) => (
                 <Space>
-                    <Avatar src={record.avatar} />
+                    <Avatar src={record.avatar}>{record.username?.[0]}</Avatar>
                     <div>
-                        <div style={{ fontWeight: 'bold' }}>{record.name}</div>
-                        <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.phone}</div>
+                        {/* 修正 2: 使用 username 而非 name */}
+                        <div style={{ fontWeight: 'bold' }}>{record.username}</div>
+                        <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.email}</div>
                     </div>
                 </Space>
             ),
         },
         {
             title: '总订单数',
-            dataIndex: 'totalOrders',
-            key: 'totalOrders',
+            dataIndex: 'total_orders', // 修正 3: 对应数据库下划线字段
+            key: 'total_orders',
             width: 100,
-            sorter: (a, b) => a.totalOrders - b.totalOrders,
+            render: (val) => val || 0,
         },
         {
             title: '总消费',
-            dataIndex: 'totalSpent',
-            key: 'totalSpent',
+            dataIndex: 'total_spent',
+            key: 'total_spent',
             width: 120,
-            render: (val) => `¥${val.toFixed(2)}`,
-            sorter: (a, b) => a.totalSpent - b.totalSpent,
-        },
-        {
-            title: '最近下单',
-            dataIndex: 'lastOrderAt',
-            key: 'lastOrderAt',
-            width: 180,
-            render: (time) => time ? dayjs(time).format('YYYY-MM-DD HH:mm') : '无',
+            render: (val) => val ? `¥${Number(val).toFixed(2)}` : '¥0.00',
         },
         {
             title: '状态',
             dataIndex: 'status',
             key: 'status',
             width: 100,
-            render: (status) => (
-                <Tag color={status === 'ACTIVE' ? 'success' : 'error'}>
-                    {status === 'ACTIVE' ? '活跃' : '已拉黑'}
-                </Tag>
-            ),
+            render: (status) => {
+                const s = (status || 'ACTIVE').toUpperCase();
+                return (
+                    <Tag color={s === 'ACTIVE' ? 'success' : 'error'}>
+                        {s === 'ACTIVE' ? '活跃' : '已拉黑'}
+                    </Tag>
+                );
+            },
         },
         {
             title: '注册时间',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
+            dataIndex: 'created_at', // 修正 4: 对应数据库 created_at
+            key: 'created_at',
             width: 150,
-            render: (time) => dayjs(time).format('YYYY-MM-DD'),
+            render: (time) => time ? dayjs(time).format('YYYY-MM-DD') : '-',
         },
         {
             title: '操作',
             key: 'action',
-            width: 180,
+            width: 120,
             fixed: 'right',
-            render: (_, record) => (
-                <Space size="middle">
-                    <Tooltip title="详情">
-                        <Button shape="circle" icon={<EyeOutlined />} onClick={() => showDetail(record.id)} />
-                    </Tooltip>
-                    <Tooltip title={record.status === 'BANNED' ? '解除拉黑' : '拉黑'}>
-                        <Button
-                            danger={record.status === 'ACTIVE'}
-                            shape="circle"
-                            icon={record.status === 'BANNED' ? <CheckCircleOutlined /> : <StopOutlined />}
-                            onClick={() => handleStatusChange(record)}
-                        />
-                    </Tooltip>
-                </Space>
-            ),
+            render: (_, record: any) => {
+                const s = (record.status || 'ACTIVE').toUpperCase();
+                return (
+                    <Space size="middle">
+                        <Tooltip title="详情">
+                            <Button shape="circle" icon={<EyeOutlined />} onClick={() => showDetail(record.id)} />
+                        </Tooltip>
+                        <Tooltip title={s === 'BANNED' ? '解除拉黑' : '拉黑'}>
+                            <Button
+                                danger={s === 'ACTIVE'}
+                                shape="circle"
+                                icon={s === 'BANNED' ? <CheckCircleOutlined /> : <StopOutlined />}
+                                onClick={() => handleStatusChange(record)}
+                            />
+                        </Tooltip>
+                    </Space>
+                );
+            },
         },
     ];
 
     return (
-        <Card bordered={false}>
+        <Card variant="outlined">
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
                 <Search
-                    placeholder="搜索姓名/手机号"
+                    placeholder="搜索用户名/邮箱"
                     onSearch={(value) => {
                         setKeyword(value);
                         setPage(1);
@@ -215,50 +220,58 @@ export const UserListPage: React.FC = () => {
                     <Button key="close" onClick={() => setIsDetailVisible(false)}>关闭</Button>
                 ]}
                 width={700}
-                loading={detailLoading}
             >
-                {currentUser && (
+                {detailLoading ? (
+                    <div style={{ padding: '50px', textAlign: 'center' }}>加载中...</div>
+                ) : currentUser && (
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
-                            <Avatar size={64} src={currentUser.avatar} style={{ marginRight: 16 }} />
+                            <Avatar size={64} src={currentUser.avatar} style={{ marginRight: 16 }}>
+                                {currentUser.username?.[0]}
+                            </Avatar>
                             <div>
-                                <h3 style={{ margin: 0 }}>{currentUser.name}</h3>
-                                <div style={{ color: '#8c8c8c' }}>ID: {currentUser.id} | 注册于 {dayjs(currentUser.createdAt).format('YYYY-MM-DD')}</div>
-                                <Tag color={currentUser.status === 'ACTIVE' ? 'success' : 'error'} style={{ marginTop: 8 }}>
-                                    {currentUser.status === 'ACTIVE' ? '活跃' : '已拉黑'}
+                                <h3 style={{ margin: 0 }}>{currentUser.username}</h3>
+                                <div style={{ color: '#8c8c8c' }}>
+                                    ID: {currentUser.id} | 注册于 {dayjs(currentUser.created_at).format('YYYY-MM-DD')}
+                                </div>
+                                <Tag color={(currentUser.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'success' : 'error'} style={{ marginTop: 8 }}>
+                                    {(currentUser.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? '活跃' : '已拉黑'}
                                 </Tag>
                             </div>
                         </div>
 
                         <Descriptions title="消费统计" bordered column={3}>
-                            <Descriptions.Item label="累计订单">{currentUser.totalOrders}</Descriptions.Item>
-                            <Descriptions.Item label="累计消费">¥{currentUser.totalSpent.toFixed(2)}</Descriptions.Item>
-                            <Descriptions.Item label="客单价">¥{(currentUser.totalSpent / (currentUser.totalOrders || 1)).toFixed(2)}</Descriptions.Item>
+                            <Descriptions.Item label="累计订单">{(currentUser as any).total_orders || 0}</Descriptions.Item>
+                            <Descriptions.Item label="累计消费">¥{Number((currentUser as any).total_spent || 0).toFixed(2)}</Descriptions.Item>
+                            <Descriptions.Item label="客单价">
+                                ¥{(Number((currentUser as any).total_spent || 0) / ((currentUser as any).total_orders || 1)).toFixed(2)}
+                            </Descriptions.Item>
                         </Descriptions>
 
                         <Divider />
 
-                        <Descriptions title="基本信息" bordered column={2}>
-                            <Descriptions.Item label="手机号">{currentUser.phone}</Descriptions.Item>
-                            <Descriptions.Item label="最近下单时间">{currentUser.lastOrderAt ? dayjs(currentUser.lastOrderAt).format('YYYY-MM-DD HH:mm') : '无'}</Descriptions.Item>
+                        <Descriptions title="基本信息" bordered column={1}>
+                            <Descriptions.Item label="邮箱">{currentUser.email}</Descriptions.Item>
+                            <Descriptions.Item label="角色">{(currentUser as any).role || '普通用户'}</Descriptions.Item>
                         </Descriptions>
 
-                        <Divider />
-
-                        <h4 style={{ marginBottom: 16 }}>收货地址</h4>
-                        <Table
-                            dataSource={currentUser.addresses}
-                            pagination={false}
-                            rowKey="id"
-                            size="small"
-                            columns={[
-                                { title: '联系人', dataIndex: 'contactName', key: 'contactName' },
-                                { title: '电话', dataIndex: 'phone', key: 'phone' },
-                                { title: '标签', dataIndex: 'tag', key: 'tag', render: (t) => t ? <Tag>{t}</Tag> : '-' },
-                                { title: '地址', key: 'address', render: (_, r) => `${r.area}${r.detail}` },
-                                { title: '默认', dataIndex: 'isDefault', key: 'isDefault', render: (d) => d ? <Tag color="blue">默认</Tag> : null },
-                            ]}
-                        />
+                        {currentUser.addresses && currentUser.addresses.length > 0 && (
+                            <>
+                                <Divider />
+                                <h4 style={{ marginBottom: 16 }}>收货地址</h4>
+                                <Table
+                                    dataSource={currentUser.addresses}
+                                    pagination={false}
+                                    rowKey="id"
+                                    size="small"
+                                    columns={[
+                                        { title: '联系人', dataIndex: 'contactName', key: 'contactName' },
+                                        { title: '电话', dataIndex: 'phone', key: 'phone' },
+                                        { title: '地址', key: 'address', render: (_, r: any) => `${r.area}${r.detail}` },
+                                    ]}
+                                />
+                            </>
+                        )}
                     </div>
                 )}
             </Modal>

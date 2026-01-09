@@ -1,5 +1,5 @@
 import { supabase } from '../utils/supabase';
-import type { Order, OrderStatus, ApiResponse } from '../types/index';
+import type { Order, OrderStatusType, ApiResponse } from '../types/index';
 import {
     mockGetOrders,
     mockGetOrderDetail,
@@ -9,27 +9,32 @@ import {
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
-// 获取订单列表
+// 1. 获取订单列表
 export const getOrders = async (params: {
     page: number;
     pageSize: number;
-    status?: OrderStatus;
+    status?: OrderStatusType;
     keyword?: string;
 }) => {
-    if (USE_MOCK) {
-        return mockGetOrders(params);
-    }
+    if (USE_MOCK) return mockGetOrders(params);
 
+    // 重点修改：添加 profiles(*) 获取用户信息
     let query = supabase
         .from('orders')
-        .select('*, canteens(*)', { count: 'exact' });
+        .select('*, canteens(*), profiles(*), order_items(*)', { count: 'exact' });
 
-    if (params.status) {
-        query = query.eq('status', params.status);
-    }
+    if (params.status) query = query.eq('status', params.status);
 
     if (params.keyword) {
-        query = query.or(`id.ilike.%${params.keyword}%,remark.ilike.%${params.keyword}%`);
+        const isNum = /^\d+$/.test(params.keyword);
+        if (isNum) {
+            // 既然是查订单号，管理端通常是想精准查找
+            // 我们可以只锁定 id 查询，不再关联 remark 以免类型冲突
+            query = query.eq('id', parseInt(params.keyword));
+        } else {
+            // 非数字则查备注
+            query = query.ilike('remark', `%${params.keyword}%`);
+        }
     }
 
     const from = (params.page - 1) * params.pageSize;
@@ -40,28 +45,27 @@ export const getOrders = async (params: {
         .range(from, to);
 
     if (error) {
-        return { code: 500, message: error.message, data: { data: [], total: 0 } };
+        return { code: 500, message: error.message, data: { list: [], total: 0 } };
     }
 
     return {
         code: 200,
         message: '获取成功',
         data: {
-            data: data as any[],
+            list: data || [], // 建议统一叫 list，避免 data.data 这种写法
             total: count || 0
         }
     };
 };
 
-// 获取详细订单
+// 2. 获取详细订单
 export const getOrderDetail = async (id: string): Promise<ApiResponse<Order>> => {
-    if (USE_MOCK) {
-        return mockGetOrderDetail(id);
-    }
+    if (USE_MOCK) return mockGetOrderDetail(id);
 
+    // 重点修改：添加 order_items(*) 获取商品清单，profiles(*) 获取用户信息
     const { data, error } = await supabase
         .from('orders')
-        .select('*, canteens(*)')
+        .select('*, canteens(*), profiles(*), order_items(*)')
         .eq('id', id)
         .single();
 
@@ -73,7 +77,7 @@ export const getOrderDetail = async (id: string): Promise<ApiResponse<Order>> =>
 };
 
 // 更新订单状态
-export const updateOrderStatus = async (id: string, status: OrderStatus): Promise<ApiResponse<Order>> => {
+export const updateOrderStatus = async (id: string, status: OrderStatusType): Promise<ApiResponse<Order>> => {
     if (USE_MOCK) {
         return mockUpdateOrderStatus(id, status);
     }

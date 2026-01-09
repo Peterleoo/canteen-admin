@@ -1,3 +1,12 @@
+const STATUS_TEXT: Record<string, string> = {
+    'PENDING': '待处理',
+    'PREPARING': '准备中',
+    'DELIVERING': '配送中',
+    'READY_FOR_PICKUP': '待自提',
+    'COMPLETED': '已完成',
+    'CANCELLED': '已取消',
+};
+
 import React, { useState, useEffect } from 'react';
 import {
     Table,
@@ -18,8 +27,8 @@ import {
     PlayCircleOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { getOrders, updateOrderStatus } from '../../api/order';
-import { OrderStatus, type Order, type OrderStatus as OrderStatusType } from '../../types/index';
+import { getOrders, updateOrderStatus, getOrderDetail } from '../../api/order';
+import { OrderStatus, type Order, type OrderStatusType } from '../../types/index';
 import dayjs from 'dayjs';
 
 const { Search } = Input;
@@ -45,8 +54,10 @@ export const OrderListPage: React.FC = () => {
                 status: statusFilter,
                 keyword,
             });
-            setOrders(response.data.data);
-            setTotal(response.data.total);
+            // 修正：Supabase API 返回的是 list 和 total
+            console.log('DEBUG: Fetched orders:', response.data.list); // 添加调试日志
+            setOrders(response.data.list || []);
+            setTotal(response.data.total || 0);
         } catch (error) {
             message.error('加载订单失败');
         } finally {
@@ -58,7 +69,7 @@ export const OrderListPage: React.FC = () => {
         loadOrders();
     }, [page, pageSize, statusFilter, keyword]);
 
-    const handleStatusChange = async (id: string, status: OrderStatusType) => {
+    const handleStatusChange = async (id: any, status: OrderStatusType) => {
         try {
             await updateOrderStatus(id, status);
             message.success(`订单状态已更新为 ${status}`);
@@ -71,9 +82,23 @@ export const OrderListPage: React.FC = () => {
         }
     };
 
-    const showDetail = (order: Order) => {
-        setCurrentOrder(order);
-        setIsDetailVisible(true);
+    const showDetail = async (order: Order) => {
+        setLoading(true);
+        try {
+            // 关键修复：将 order.id 转为字符串以匹配 API 定义
+            const response = await getOrderDetail(String(order.id));
+
+            if (response.code === 200 && response.data) {
+                setCurrentOrder(response.data);
+                setIsDetailVisible(true);
+            } else {
+                message.error('获取订单详情失败: ' + response.message);
+            }
+        } catch (error) {
+            message.error('请求详情出错');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const statusTags: Record<string, string> = {
@@ -90,16 +115,27 @@ export const OrderListPage: React.FC = () => {
             title: '订单编号',
             dataIndex: 'id',
             key: 'id',
-            width: 120,
+            width: 80,
+        },
+        {
+            title: '所属食堂',
+            dataIndex: 'canteens',
+            key: 'canteen',
+            width: 150,
+            render: (canteens: any) => (
+                <Tag color="green">
+                    {canteens?.name || '未知食堂'}
+                </Tag>
+            ),
         },
         {
             title: '用户信息',
             key: 'user',
             width: 180,
-            render: (_, record) => (
+            render: (_, record: any) => (
                 <div>
-                    <div style={{ fontWeight: 'bold' }}>{record.user?.name}</div>
-                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.user?.phone}</div>
+                    <div style={{ fontWeight: 'bold' }}>{record.profiles?.username || '匿名用户'}</div>
+                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.profiles?.email || '无邮箱'}</div>
                 </div>
             ),
         },
@@ -108,12 +144,16 @@ export const OrderListPage: React.FC = () => {
             dataIndex: 'total',
             key: 'total',
             width: 100,
-            render: (total) => `¥${total.toFixed(2)}`,
+            render: (total) => (
+                <span style={{ fontWeight: 'bold', color: '#ff4d4f' }}>
+                    ¥{Number(total || 0).toFixed(2)}
+                </span>
+            ),
         },
         {
             title: '配送方式',
-            dataIndex: 'deliveryMethod',
-            key: 'deliveryMethod',
+            dataIndex: 'delivery_method',
+            key: 'delivery_method',
             width: 100,
             render: (method) => (
                 <Tag color={method === 'DELIVERY' ? 'geekblue' : 'gold'}>
@@ -126,47 +166,70 @@ export const OrderListPage: React.FC = () => {
             dataIndex: 'status',
             key: 'status',
             width: 120,
-            render: (status) => <Tag color={statusTags[status]}>{status}</Tag>,
+            render: (status: string) => {
+                const s = (status || '').toUpperCase(); // 强制转大写匹配映射表
+                return <Tag color={statusTags[s] || 'default'}>{STATUS_TEXT[s] || s}</Tag>;
+            },
         },
         {
             title: '下单时间',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
+            dataIndex: 'created_at',
+            key: 'created_at',
             width: 180,
             render: (time) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
         },
         {
             title: '操作',
             key: 'action',
-            width: 250,
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button icon={<EyeOutlined />} onClick={() => showDetail(record)}>详情</Button>
+            width: 200,
+            render: (_, record) => {
+                const s = (record.status || '').toUpperCase();
+                return (
+                    <Space size="middle">
+                        <Button size="small" icon={<EyeOutlined />} onClick={() => showDetail(record)}>详情</Button>
 
-                    {record.status === OrderStatus.PENDING && (
-                        <Button
-                            type="primary"
-                            icon={<PlayCircleOutlined />}
-                            onClick={() => handleStatusChange(record.id, OrderStatus.PREPARING)}
-                        >
-                            接单
-                        </Button>
-                    )}
+                        {s === 'PENDING' && (
+                            <Button
+                                size="small"
+                                type="primary"
+                                icon={<PlayCircleOutlined />}
+                                onClick={() => handleStatusChange(record.id, OrderStatus.PREPARING)}
+                            >
+                                接单
+                            </Button>
+                        )}
 
-                    {record.status === OrderStatus.PREPARING && (
-                        <Button
-                            type="primary"
-                            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                            icon={<CheckCircleOutlined />}
-                            onClick={() => handleStatusChange(record.id, record.deliveryMethod === 'DELIVERY' ? OrderStatus.DELIVERING : OrderStatus.READY_FOR_PICKUP)}
-                        >
-                            备餐完成
-                        </Button>
-                    )}
-                </Space>
-            ),
+                        {s === 'PREPARING' && (
+                            <Button
+                                size="small"
+                                type="primary"
+                                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                icon={<CheckCircleOutlined />}
+                                onClick={() => handleStatusChange(
+                                    record.id,
+                                    record.delivery_method === 'DELIVERY' ? OrderStatus.DELIVERING : OrderStatus.READY_FOR_PICKUP
+                                )}
+                            >
+                                备餐完成
+                            </Button>
+                        )}
+                        {/* 3. 配送中 或 待自提 -> 完成订单 (新增逻辑) */}
+                        {(s === 'DELIVERING' || s === 'READY_FOR_PICKUP') && (
+                            <Button
+                                size="small"
+                                type="primary"
+                                style={{ backgroundColor: '#1890ff' }}
+                                icon={<CheckCircleOutlined />}
+                                onClick={() => handleStatusChange(record.id, OrderStatus.COMPLETED)}
+                            >
+                                完成订单
+                            </Button>
+                        )}
+                    </Space>
+                );
+            },
         },
-    ];
+    ]; // 注意：这里是唯一的 columns 结束点
 
     return (
         <Card>
@@ -179,7 +242,9 @@ export const OrderListPage: React.FC = () => {
                 items={[
                     { label: '全部订单', key: 'ALL' },
                     { label: '待处理', key: OrderStatus.PENDING },
-                    { label: '进行中', key: OrderStatus.PREPARING },
+                    { label: '准备中', key: OrderStatus.PREPARING },
+                    { label: '配送中', key: OrderStatus.DELIVERING },
+                    { label: '自提中', key: OrderStatus.READY_FOR_PICKUP },
                     { label: '已完成', key: OrderStatus.COMPLETED },
                     { label: '已取消', key: OrderStatus.CANCELLED },
                 ]}
@@ -188,7 +253,7 @@ export const OrderListPage: React.FC = () => {
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
                 <Space>
                     <Search
-                        placeholder="搜索订单号/姓名/手机号"
+                        placeholder="搜索订单号"
                         onSearch={(value) => {
                             setKeyword(value);
                             setPage(1);
@@ -197,7 +262,6 @@ export const OrderListPage: React.FC = () => {
                         allowClear
                     />
                 </Space>
-
                 <Button onClick={loadOrders}>刷新列表</Button>
             </div>
 
@@ -232,58 +296,115 @@ export const OrderListPage: React.FC = () => {
                 ]}
                 width={700}
             >
-                {currentOrder && (
-                    <div>
-                        <Descriptions title="基本信息" bordered column={2}>
-                            <Descriptions.Item label="订单编号">{currentOrder.id}</Descriptions.Item>
-                            <Descriptions.Item label="下单时间">{dayjs(currentOrder.createdAt).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
-                            <Descriptions.Item label="当前状态"><Tag color={statusTags[currentOrder.status]}>{currentOrder.status}</Tag></Descriptions.Item>
-                            <Descriptions.Item label="配送方式">{currentOrder.deliveryMethod === 'DELIVERY' ? '外送' : '自提'}</Descriptions.Item>
-                        </Descriptions>
+                {currentOrder && (() => {
+                    // --- 1. 定义计算逻辑 ---
+                    // 商品小计：通过 reduce 累加 order_items
+                    const itemsSubtotal = (currentOrder as any).order_items?.reduce(
+                        (sum: number, item: any) => sum + (Number(item.price || 0) * (item.quantity || 0)),
+                        0
+                    ) || 0;
 
-                        <Divider />
+                    // 打包费：从食堂配置读取
+                    const packingFee = Number((currentOrder as any).canteens?.default_packaging_fee || 0);
 
-                        <Descriptions title="用户信息" bordered column={2}>
-                            <Descriptions.Item label="姓名">{currentOrder.user?.name}</Descriptions.Item>
-                            <Descriptions.Item label="电话">{currentOrder.user?.phone}</Descriptions.Item>
-                            {currentOrder.deliveryMethod === 'DELIVERY' && (
-                                <Descriptions.Item label="配送地址" span={2}>
-                                    {currentOrder.address?.area} {currentOrder.address?.detail}
+                    // 配送费：外送则读取食堂配置，自提为 0
+                    const deliveryFee = currentOrder.delivery_method === 'DELIVERY'
+                        ? Number((currentOrder as any).canteens?.delivery_fee || 0)
+                        : 0;
+
+                    // 优惠金额
+                    const discountAmount = Number((currentOrder as any).discount_amount || 0);
+
+                    // 实付款汇总计算
+                    const finalTotal = itemsSubtotal + packingFee + deliveryFee - discountAmount;
+
+                    return (
+                        <div>
+                            <Descriptions title="基本信息" bordered column={2}>
+                                <Descriptions.Item label="订单编号">{currentOrder.id}</Descriptions.Item>
+                                <Descriptions.Item label="下单时间">{dayjs(currentOrder.created_at).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
+                                <Descriptions.Item label="所属食堂">
+                                    <Tag color="green">{(currentOrder as any).canteens?.name || '未知食堂'}</Tag>
                                 </Descriptions.Item>
+                                <Descriptions.Item label="当前状态">
+                                    <Tag color={statusTags[currentOrder.status]}>{STATUS_TEXT[currentOrder.status] || currentOrder.status}</Tag>
+                                </Descriptions.Item>
+                                <Descriptions.Item label="配送方式">{currentOrder.delivery_method === 'DELIVERY' ? '外送' : '自提'}</Descriptions.Item>
+                            </Descriptions>
+
+                            <Divider />
+
+                            <Descriptions title="用户信息" bordered column={2}>
+                                <Descriptions.Item label="姓名">{(currentOrder as any).profiles?.username || '未知'}</Descriptions.Item>
+                                <Descriptions.Item label="邮箱">{(currentOrder as any).profiles?.email || '无'}</Descriptions.Item>
+                                {currentOrder.delivery_method === 'DELIVERY' && (
+                                    <Descriptions.Item label="配送地址" span={2}>
+                                        {(currentOrder as any).address_detail || '暂无详细地址'}
+                                    </Descriptions.Item>
+                                )}
+                            </Descriptions>
+
+                            <Divider />
+
+                            <Table
+                                title={() => <span style={{ fontWeight: 'bold' }}>商品清单</span>}
+                                dataSource={(currentOrder as any).order_items || []}
+                                pagination={false}
+                                rowKey="id"
+                                size="small"
+                                columns={[
+                                    { title: '商品', dataIndex: 'product_name', key: 'product_name' },
+                                    {
+                                        title: '单价',
+                                        dataIndex: 'price',
+                                        render: (p) => `¥${Number(p || 0).toFixed(2)}`
+                                    },
+                                    { title: '数量', dataIndex: 'quantity', key: 'quantity' },
+                                    {
+                                        title: '小计',
+                                        render: (_, r: any) => `¥${(Number(r.price || 0) * (r.quantity || 0)).toFixed(2)}`
+                                    },
+                                ]}
+                            />
+
+                            {/* --- 2. 汇总金额显示区域 --- */}
+                            <div style={{ marginTop: 16, textAlign: 'right', fontSize: '14px', borderTop: '1px solid #f0f0f0', paddingTop: 12 }}>
+                                <div style={{ marginBottom: 4 }}>
+                                    商品小计: <span style={{ width: 100, display: 'inline-block' }}>¥{itemsSubtotal.toFixed(2)}</span>
+                                </div>
+
+                                <div style={{ marginBottom: 4 }}>
+                                    打包费: <span style={{ width: 100, display: 'inline-block' }}>¥{packingFee.toFixed(2)}</span>
+                                </div>
+
+                                <div style={{ marginBottom: 4 }}>
+                                    配送费: <span style={{ width: 100, display: 'inline-block' }}>
+                                        {currentOrder.delivery_method === 'PICKUP' ? '¥0.00 (自提)' : `¥${deliveryFee.toFixed(2)}`}
+                                    </span>
+                                </div>
+
+                                {discountAmount > 0 && (
+                                    <div style={{ marginBottom: 4, color: '#ff4d4f' }}>
+                                        优惠减免: <span style={{ width: 100, display: 'inline-block' }}>-¥{discountAmount.toFixed(2)}</span>
+                                    </div>
+                                )}
+
+                                <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: 12 }}>
+                                    实付款: <span style={{ color: '#ff4d4f', width: 100, display: 'inline-block' }}>
+                                        ¥{finalTotal.toFixed(2)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {currentOrder.remark && (
+                                <div style={{ marginTop: 16 }}>
+                                    <span style={{ fontWeight: 'bold' }}>备注：</span>
+                                    <span style={{ color: '#8c8c8c' }}>{currentOrder.remark}</span>
+                                </div>
                             )}
-                        </Descriptions>
-
-                        <Divider />
-
-                        <Table
-                            title={() => <span style={{ fontWeight: 'bold' }}>商品清单</span>}
-                            dataSource={currentOrder.items}
-                            pagination={false}
-                            rowKey="id"
-                            columns={[
-                                { title: '商品', dataIndex: 'name', key: 'name' },
-                                { title: '单价', dataIndex: 'price', key: 'price', render: (p) => `¥${p.toFixed(2)}` },
-                                { title: '数量', dataIndex: 'quantity', key: 'quantity' },
-                                { title: '小计', key: 'subtotal', render: (_, r) => `¥${(r.price * r.quantity).toFixed(2)}` },
-                            ]}
-                        />
-
-                        <div style={{ marginTop: 16, textAlign: 'right', fontSize: '16px' }}>
-                            <div>商品小计: ¥{currentOrder.subtotal.toFixed(2)}</div>
-                            <div>配送费: ¥{currentOrder.deliveryFee.toFixed(2)}</div>
-                            <div style={{ fontSize: '20px', fontWeight: 'bold', marginTop: 8 }}>
-                                实付款: <span style={{ color: '#ff4d4f' }}>¥{currentOrder.total.toFixed(2)}</span>
-                            </div>
                         </div>
-
-                        {currentOrder.remark && (
-                            <div style={{ marginTop: 16 }}>
-                                <span style={{ fontWeight: 'bold' }}>备注：</span>
-                                <span style={{ color: '#8c8c8c' }}>{currentOrder.remark}</span>
-                            </div>
-                        )}
-                    </div>
-                )}
+                    );
+                })()}
             </Modal>
         </Card>
     );

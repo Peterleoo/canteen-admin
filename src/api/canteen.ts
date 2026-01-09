@@ -112,3 +112,23 @@ export const deleteCanteen = async (id: string): Promise<ApiResponse> => {
 
     return { code: 200, message: '删除成功', data: null };
 };
+/**
+ * 切换配送服务开关
+ */
+export const toggleDeliveryService = async (id: string, active: boolean) => {
+    return updateCanteen(id, { is_delivery_active: active });
+};
+
+/**
+ * 批量更新配送费用配置
+ */
+export const updateDeliveryConfig = async (
+    id: string,
+    config: {
+        delivery_fee: number;
+        min_delivery_amount: number;
+        free_delivery_threshold: number;
+    }
+) => {
+    return updateCanteen(id, config);
+};

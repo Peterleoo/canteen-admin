@@ -1,4 +1,4 @@
-import type { AdminUser, Role, Product, Order, DeliveryMethod, User, Canteen } from '../types/index';
+import type { AdminUser, Role, Product, Order, DeliveryMethod, User, Canteen, OrderStatusType } from '../types/index';
 import { Category, OrderStatus } from '../types/index';
 
 // Mock 管理员用户数据
@@ -400,7 +400,7 @@ export const mockBatchUpdateProductStatus = (ids: string[], status: 'ACTIVE' | '
 export interface OrderQueryParams {
     page?: number;
     pageSize?: number;
-    status?: OrderStatus;
+    status?: OrderStatusType;
     deliveryMethod?: DeliveryMethod;
     keyword?: string;
     startDate?: string;
@@ -409,54 +409,60 @@ export interface OrderQueryParams {
 
 let mockOrders: Order[] = [
     {
-        id: 'ORD001',
-        userId: 'U001',
-        user: { id: 'U001', name: '张三', phone: '13812345678', avatar: '', status: 'ACTIVE', totalOrders: 5, totalSpent: 260, createdAt: '2024-01-01' },
-        canteenId: '1',
-        items: [
-            { id: 1, name: '川味宫保鸡丁', quantity: 1, price: 12.5, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=800', stock: 50, sales: 1205, status: 'ACTIVE' } as any
+        id: 1001,
+        user_id: 'U001',
+        profiles: {
+            id: 'U001', username: '张三', phone: '13812345678', email: 'zhangsan@example.com', status: 'ACTIVE', total_orders: 5, total_spent: 260, created_at: '2024-01-01'
+        },
+        canteen_id: 1,
+        order_items: [
+            { id: 1, product_name: '川味宫保鸡丁', quantity: 1, price: 12.5, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=800', stock: 50, sales: 1205, status: 'ACTIVE' } as any
         ],
         subtotal: 12.5,
-        deliveryFee: 0,
-        total: 12.5,
+        delivery_fee: 0,
+        total: 14.0, // 12.5 + 1.5(打包)
         status: OrderStatus.PENDING,
-        deliveryMethod: 'PICKUP',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        delivery_method: 'PICKUP',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
     },
     {
-        id: 'ORD002',
-        userId: 'U002',
-        user: { id: 'U002', name: '李四', phone: '13987654321', avatar: '', status: 'ACTIVE', totalOrders: 2, totalSpent: 80, createdAt: '2024-01-02' },
-        canteenId: '1',
-        items: [
-            { id: 4, name: '私房红烧牛肉面', quantity: 2, price: 14.0, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=800', stock: 25, sales: 2100, status: 'ACTIVE' } as any
+        id: 1002,
+        user_id: 'U002',
+        profiles: {
+            id: 'U002', username: '李四', phone: '13987654321', email: 'lisi@example.com', status: 'ACTIVE', total_orders: 2, total_spent: 80, created_at: '2024-01-02'
+        },
+        canteen_id: 1,
+        order_items: [
+            { id: 4, product_name: '私房红烧牛肉面', quantity: 2, price: 14.0, category: Category.MAINS, image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=800', stock: 25, sales: 2100, status: 'ACTIVE' } as any
         ],
         subtotal: 28.0,
-        deliveryFee: 5,
+        delivery_fee: 5,
         total: 33.0,
         status: OrderStatus.PREPARING,
-        deliveryMethod: 'DELIVERY',
-        address: { id: 'A001', contactName: '李四', phone: '13987654321', area: '万科滨河道', detail: '3号楼201', tag: '家', isDefault: true },
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        updatedAt: new Date(Date.now() - 3600000).toISOString(),
+        delivery_method: 'DELIVERY',
+        address_detail: '万科滨河道 3号楼201',
+        created_at: new Date(Date.now() - 3600000).toISOString(),
+        updated_at: new Date(Date.now() - 3600000).toISOString(),
     },
     {
-        id: 'ORD003',
-        userId: 'U003',
-        user: { id: 'U003', name: '王五', phone: '13700001111', avatar: '', status: 'ACTIVE', totalOrders: 10, totalSpent: 1200, createdAt: '2023-12-15' },
-        canteenId: '1',
-        items: [
-            { id: 9, name: '元气职人午餐套餐', quantity: 1, price: 22.0, category: Category.COMBOS, image: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=800', stock: 50, sales: 1800, status: 'ACTIVE' } as any,
-            { id: 7, name: '爆汁手打柠檬茶', quantity: 1, price: 4.0, category: Category.DRINKS, image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800', stock: 200, sales: 1500, status: 'ACTIVE' } as any
+        id: 1003,
+        user_id: 'U003',
+        profiles: {
+            id: 'U003', username: '王五', phone: '13700001111', email: 'wangwu@example.com', status: 'ACTIVE', total_orders: 10, total_spent: 1200, created_at: '2023-12-15'
+        },
+        canteen_id: 1,
+        order_items: [
+            { id: 9, product_name: '元气职人午餐套餐', quantity: 1, price: 22.0, category: Category.COMBOS, image: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=800', stock: 50, sales: 1800, status: 'ACTIVE' } as any,
+            { id: 7, product_name: '爆汁手打柠檬茶', quantity: 1, price: 4.0, category: Category.DRINKS, image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800', stock: 200, sales: 1500, status: 'ACTIVE' } as any
         ],
         subtotal: 26.0,
-        deliveryFee: 0,
+        delivery_fee: 0,
         total: 26.0,
         status: OrderStatus.COMPLETED,
-        deliveryMethod: 'PICKUP',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 86400000).toISOString(),
+        delivery_method: 'PICKUP',
+        created_at: new Date(Date.now() - 86400000).toISOString(),
+        updated_at: new Date(Date.now() - 86400000).toISOString(),
     }
 ];
 
@@ -473,14 +479,14 @@ export const mockGetOrders = (params: OrderQueryParams) => {
             }
 
             if (deliveryMethod) {
-                filtered = filtered.filter(o => o.deliveryMethod === deliveryMethod);
+                filtered = filtered.filter(o => o.delivery_method === deliveryMethod);
             }
 
             if (keyword) {
                 filtered = filtered.filter(o =>
-                    o.id.toLowerCase().includes(keyword.toLowerCase()) ||
-                    o.user?.phone.includes(keyword) ||
-                    o.user?.name.includes(keyword)
+                    String(o.id).includes(keyword) ||
+                    o.profiles?.phone?.includes(keyword) ||
+                    o.profiles?.username?.includes(keyword)
                 );
             }
 
@@ -493,7 +499,7 @@ export const mockGetOrders = (params: OrderQueryParams) => {
                 code: 200,
                 message: '成功',
                 data: {
-                    data,
+                    data, // Use data instead of list to match PaginationResponse
                     total,
                     page,
                     pageSize,
@@ -504,13 +510,13 @@ export const mockGetOrders = (params: OrderQueryParams) => {
 };
 
 // 更新订单状态
-export const mockUpdateOrderStatus = (id: string, status: OrderStatus) => {
+export const mockUpdateOrderStatus = (id: string, status: OrderStatusType) => {
     return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            const index = mockOrders.findIndex(o => o.id === id);
+            const index = mockOrders.findIndex(o => o.id === Number(id));
             if (index !== -1) {
                 mockOrders[index].status = status;
-                mockOrders[index].updatedAt = new Date().toISOString();
+                mockOrders[index].updated_at = new Date().toISOString();
                 resolve({
                     code: 200,
                     message: '更新成功',
@@ -530,7 +536,7 @@ export const mockUpdateOrderStatus = (id: string, status: OrderStatus) => {
 export const mockGetOrderDetail = (id: string) => {
     return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            const order = mockOrders.find(o => o.id === id);
+            const order = mockOrders.find(o => o.id === Number(id));
             if (order) {
                 resolve({
                     code: 200,
@@ -552,10 +558,10 @@ export const mockBatchCancelOrders = (ids: string[], reason: string) => {
     return new Promise<any>((resolve) => {
         setTimeout(() => {
             mockOrders.forEach(o => {
-                if (ids.includes(o.id)) {
+                if (ids.includes(String(o.id))) {
                     o.status = OrderStatus.CANCELLED;
-                    (o as any).cancelReason = reason;
-                    o.updatedAt = new Date().toISOString();
+                    (o as any).cancel_reason = reason;
+                    o.updated_at = new Date().toISOString();
                 }
             });
             resolve({
@@ -579,58 +585,58 @@ export interface UserQueryParams {
 let mockUsers: User[] = [
     {
         id: 'U001',
-        name: '张三',
+        username: '张三',
+        email: 'zhangsan@example.com',
         phone: '13812345678',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ZhangSan',
         status: 'ACTIVE',
-        totalOrders: 5,
-        totalSpent: 260.5,
-        lastOrderAt: '2024-01-05T12:00:00Z',
-        createdAt: '2023-10-01T08:00:00Z',
+        total_orders: 5,
+        total_spent: 260.5,
+        created_at: '2023-10-01T08:00:00Z',
     },
     {
         id: 'U002',
-        name: '李四',
+        username: '李四',
+        email: 'lisi@example.com',
         phone: '13987654321',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LiSi',
         status: 'ACTIVE',
-        totalOrders: 12,
-        totalSpent: 1250,
-        lastOrderAt: '2024-01-06T15:30:00Z',
-        createdAt: '2023-09-15T10:00:00Z',
+        total_orders: 12,
+        total_spent: 1250,
+        created_at: '2023-09-15T10:00:00Z',
     },
     {
         id: 'U003',
-        name: '王五',
+        username: '王五',
+        email: 'wangwu@example.com',
         phone: '13700001111',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=WangWu',
         status: 'BANNED',
-        totalOrders: 2,
-        totalSpent: 45,
-        lastOrderAt: '2023-12-20T18:00:00Z',
-        createdAt: '2023-11-20T09:00:00Z',
+        total_orders: 2,
+        total_spent: 45,
+        created_at: '2023-11-20T09:00:00Z',
     },
     {
         id: 'U004',
-        name: '赵六',
+        username: '赵六',
+        email: 'zhaoliu@example.com',
         phone: '13566667777',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ZhaoLiu',
         status: 'ACTIVE',
-        totalOrders: 25,
-        totalSpent: 3200,
-        lastOrderAt: '2024-01-06T19:00:00Z',
-        createdAt: '2023-08-01T14:00:00Z',
+        total_orders: 25,
+        total_spent: 3200,
+        created_at: '2023-08-01T14:00:00Z',
     },
     {
         id: 'U005',
-        name: '钱七',
+        username: '钱七',
+        email: 'qianqi@example.com',
         phone: '18899990000',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=QianQi',
         status: 'ACTIVE',
-        totalOrders: 8,
-        totalSpent: 680,
-        lastOrderAt: '2024-01-04T10:00:00Z',
-        createdAt: '2023-12-05T11:00:00Z',
+        total_orders: 8,
+        total_spent: 680,
+        created_at: '2023-12-05T11:00:00Z',
     }
 ];
 
@@ -648,8 +654,9 @@ export const mockGetUsers = (params: UserQueryParams) => {
 
             if (keyword) {
                 filtered = filtered.filter(u =>
-                    u.name.toLowerCase().includes(keyword.toLowerCase()) ||
-                    u.phone.includes(keyword)
+                    u.username.toLowerCase().includes(keyword.toLowerCase()) ||
+                    (u.phone && u.phone.includes(keyword)) ||
+                    u.email.toLowerCase().includes(keyword.toLowerCase())
                 );
             }
 
@@ -662,7 +669,7 @@ export const mockGetUsers = (params: UserQueryParams) => {
                 code: 200,
                 message: '成功',
                 data: {
-                    data,
+                    data, // Match interface property 'data'
                     total,
                     page,
                     pageSize,
@@ -684,8 +691,8 @@ export const mockGetUserDetail = (id: string) => {
                     data: {
                         ...user,
                         addresses: [
-                            { id: 'A001', contactName: user.name, phone: user.phone, area: '万科滨河道', detail: '3号楼201', tag: '家', isDefault: true },
-                            { id: 'A002', contactName: user.name, phone: user.phone, area: '财富中心', detail: 'A座3002', tag: '公司', isDefault: false },
+                            { id: 'A001', contactName: user.username, phone: user.phone, area: '万科滨河道', detail: '3号楼201', tag: '家', isDefault: true },
+                            { id: 'A002', contactName: user.username, phone: user.phone, area: '财富中心', detail: 'A座3002', tag: '公司', isDefault: false },
                         ],
                     },
                 });
@@ -730,14 +737,16 @@ let mockCanteens: Canteen[] = [
         address: '校园北区学子路 12 号',
         distance: '200m',
         status: 'OPEN',
-        contactPhone: '010-62771234',
+        contact_phone: '010-62771234', // 已修改
         manager: '陈主管',
         capacity: 500,
-        currentOrders: 42,
-        deliveryEnabled: true,
-        deliveryRadius: 3,
-        deliveryFee: 2.5,
-        freeDeliveryThreshold: 30,
+        current_orders: 42,           // 已修改
+        is_delivery_active: true,     // 已修改 (原 deliveryEnabled)
+        delivery_radius: 3,           // 已修改
+        delivery_fee: 2.5,            // 已修改
+        free_delivery_threshold: 30,  // 已修改
+        min_delivery_amount: 15,      // 新增：起送价
+        default_packaging_fee: 1.5,   // 新增：打包费
     },
     {
         id: '2',
@@ -745,14 +754,16 @@ let mockCanteens: Canteen[] = [
         address: '校园南区友谊路 5 号',
         distance: '800m',
         status: 'BUSY',
-        contactPhone: '010-62775678',
+        contact_phone: '010-62775678', // 已修改
         manager: '穆经理',
         capacity: 300,
-        currentOrders: 85,
-        deliveryEnabled: true,
-        deliveryRadius: 2,
-        deliveryFee: 3.0,
-        freeDeliveryThreshold: 50,
+        current_orders: 85,           // 已修改
+        is_delivery_active: true,     // 已修改
+        delivery_radius: 2,           // 已修改
+        delivery_fee: 3.0,            // 已修改
+        free_delivery_threshold: 50,  // 已修改
+        min_delivery_amount: 20,      // 新增
+        default_packaging_fee: 2.0,   // 新增
     }
 ];
 
@@ -844,16 +855,26 @@ export const mockCreateCanteen = (data: Partial<Canteen>) => {
                 address: data.address || '',
                 distance: '100m',
                 status: 'OPEN',
-                contactPhone: data.contactPhone || '',
+
+                // --- 风格转换后的字段 ---
+                contact_phone: data.contact_phone || '', // contactPhone -> contact_phone
                 manager: data.manager || '',
                 capacity: data.capacity || 0,
-                currentOrders: 0,
-                deliveryEnabled: data.deliveryEnabled ?? false,
-                deliveryRadius: data.deliveryRadius || 1,
-                deliveryFee: data.deliveryFee || 0,
-                freeDeliveryThreshold: data.freeDeliveryThreshold || 0,
+                current_orders: 0,                       // currentOrders -> current_orders
+
+                // --- 配送服务配置 ---
+                is_delivery_active: data.is_delivery_active ?? false, // deliveryEnabled -> is_delivery_active
+                delivery_radius: data.delivery_radius || 1,           // deliveryRadius -> delivery_radius
+                delivery_fee: data.delivery_fee || 0,                 // deliveryFee -> delivery_fee
+                free_delivery_threshold: data.free_delivery_threshold || 0, // 修正拼写
+
+                // --- 新增业务字段 ---
+                min_delivery_amount: data.min_delivery_amount || 0,      // 新发起送价
+                default_packaging_fee: data.default_packaging_fee || 0,  // 新增打包费
             };
+
             mockCanteens.push(newCanteen);
+
             resolve({
                 code: 200,
                 message: '创建成功',

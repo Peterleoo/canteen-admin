@@ -32,7 +32,8 @@ const columns: ColumnsType<any> = [
         title: '营业额',
         dataIndex: 'revenue',
         key: 'revenue',
-        render: (value) => `¥${value.toLocaleString()}`,
+        // 使用可选链 ? 和逻辑或 || 确保即使数据未定义也不会崩溃
+        render: (value) => value?.toLocaleString() || '0',
         sorter: (a, b) => a.revenue - b.revenue,
     },
 ];

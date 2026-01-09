@@ -461,8 +461,15 @@ export const ProductListPage: React.FC = () => {
                             <Switch />
                         </Form.Item>
 
-                        <Form.Item label="上架状态" name="status" valuePropName="checked">
-                            <Switch checkedChildren="上架" unCheckedChildren="下架" />
+                        <Form.Item
+                            label="上架状态"
+                            name="status"
+                            rules={[{ required: true }]}
+                        >
+                            <Select>
+                                <Option value="ACTIVE">上架</Option>
+                                <Option value="INACTIVE">下架</Option>
+                            </Select>
                         </Form.Item>
                     </Space>
                 </Form>
