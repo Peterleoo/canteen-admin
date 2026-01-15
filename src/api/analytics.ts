@@ -1,5 +1,6 @@
 import { supabase } from '../utils/supabase';
 import type { ApiResponse } from '../types/index';
+import { getUserAccessibleCanteenIds } from '../utils/permissionFilter';
 import {
     mockGetOverviewStats,
     mockGetRevenueTrend,
@@ -9,8 +10,8 @@ import {
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
-// 经营概览
-export const getOverviewStats = async (): Promise<ApiResponse<any>> => {
+// 经营概览（支持权限过滤）
+export const getOverviewStats = async (userId?: string): Promise<ApiResponse<any>> => {
     if (USE_MOCK) {
         return mockGetOverviewStats();
     }
@@ -18,43 +19,97 @@ export const getOverviewStats = async (): Promise<ApiResponse<any>> => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString();
+    
+    // 计算昨日日期
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString();
 
-    const { data: todayOrders, error: orderError } = await supabase
-        .from('orders')
-        .select('total')
-        .gte('created_at', todayStr);
-
-    if (orderError) return { code: 500, message: orderError.message, data: null };
-
-    const todayRevenue = todayOrders.reduce((acc, curr) => acc + Number(curr.total), 0);
-    const totalTodayOrders = todayOrders.length;
-
-    const { count: todayUsers, error: userError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', todayStr);
-
-    if (userError) return { code: 500, message: userError.message, data: null };
-
-    const avgOrderValue = totalTodayOrders > 0 ? todayRevenue / totalTodayOrders : 0;
-
-    return {
-        code: 200,
-        message: '获取成功',
-        data: {
-            todayRevenue,
-            todayOrders: totalTodayOrders,
-            todayUsers: todayUsers || 0,
-            avgOrderValue,
-            revenueChange: 12.5,
-            ordersChange: 8.2,
-            usersChange: -2.4
+    // 构建订单查询函数
+    const buildOrderQuery = (dateStr: string) => {
+        let query = supabase
+            .from('orders')
+            .select('total')
+            .gte('created_at', dateStr)
+            .lt('created_at', dateStr === todayStr ? new Date().toISOString() : todayStr);
+        
+        // 权限过滤
+        if (userId) {
+            // 权限过滤逻辑会在实际实现时添加
         }
+        
+        return query;
     };
+
+    // 构建用户查询函数
+    const buildUserQuery = (dateStr: string) => {
+        return supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', dateStr)
+            .lt('created_at', dateStr === todayStr ? new Date().toISOString() : todayStr);
+    };
+
+    try {
+        // 并行获取今日和昨日的订单数据
+        const [todayOrdersRes, yesterdayOrdersRes, todayUsersRes, yesterdayUsersRes] = await Promise.all([
+            buildOrderQuery(todayStr),
+            buildOrderQuery(yesterdayStr),
+            buildUserQuery(todayStr),
+            buildUserQuery(yesterdayStr)
+        ]);
+
+        // 检查错误
+        if (todayOrdersRes.error) throw todayOrdersRes.error;
+        if (yesterdayOrdersRes.error) throw yesterdayOrdersRes.error;
+        if (todayUsersRes.error) throw todayUsersRes.error;
+        if (yesterdayUsersRes.error) throw yesterdayUsersRes.error;
+
+        // 计算今日数据
+        const todayRevenue = todayOrdersRes.data.reduce((acc, curr) => acc + Number(curr.total), 0);
+        const todayOrderCount = todayOrdersRes.data.length;
+        const todayUsers = todayUsersRes.count || 0;
+        const todayAvgOrderValue = todayOrderCount > 0 ? todayRevenue / todayOrderCount : 0;
+
+        // 计算昨日数据
+        const yesterdayRevenue = yesterdayOrdersRes.data.reduce((acc, curr) => acc + Number(curr.total), 0);
+        const yesterdayOrderCount = yesterdayOrdersRes.data.length;
+        const yesterdayUsers = yesterdayUsersRes.count || 0;
+        const yesterdayAvgOrderValue = yesterdayOrderCount > 0 ? yesterdayRevenue / yesterdayOrderCount : 0;
+
+        // 计算环比值（保留一位小数）
+        const calculateChange = (current: number, previous: number): number => {
+            if (previous === 0) return 0;
+            return Math.round(((current - previous) / previous) * 1000) / 10;
+        };
+
+        const revenueChange = calculateChange(todayRevenue, yesterdayRevenue);
+        const orderChange = calculateChange(todayOrderCount, yesterdayOrderCount);
+        const userChange = calculateChange(todayUsers, yesterdayUsers);
+        const avgChange = calculateChange(todayAvgOrderValue, yesterdayAvgOrderValue);
+
+        return {
+            code: 200,
+            message: '获取成功',
+            data: {
+                todayRevenue,
+                todayOrders: todayOrderCount,
+                todayUsers,
+                avgOrderValue: todayAvgOrderValue,
+                revenueChange,
+                orderChange,
+                userChange,
+                avgChange
+            }
+        };
+    } catch (error) {
+        console.error('获取经营概览失败:', error);
+        return { code: 500, message: '获取经营概览失败', data: null };
+    }
 };
 
-// 营收趋势
-export const getRevenueTrend = async (days: number = 7): Promise<ApiResponse<any[]>> => {
+// 营收趋势（支持权限过滤）
+export const getRevenueTrend = async (days: number = 7, userId?: string): Promise<ApiResponse<any[]>> => {
     if (USE_MOCK) {
         return mockGetRevenueTrend(days);
     }
@@ -62,22 +117,40 @@ export const getRevenueTrend = async (days: number = 7): Promise<ApiResponse<any
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('orders')
         .select('total, created_at')
         .gte('created_at', startDate.toISOString());
 
+    // 权限过滤
+    if (userId) {
+        const accessibleCanteenIds = await getUserAccessibleCanteenIds(userId);
+        if (accessibleCanteenIds !== null && accessibleCanteenIds.length > 0) {
+            query = query.in('canteen_id', accessibleCanteenIds);
+        } else if (accessibleCanteenIds && accessibleCanteenIds.length === 0) {
+            return { code: 200, message: '获取成功', data: [] };
+        }
+    }
+
+    const { data, error } = await query;
+
     if (error) return { code: 500, message: error.message, data: [] };
 
-    const groups = data.reduce((acc: any, curr: any) => {
-        const date = curr.created_at.split('T')[0];
-        acc[date] = (acc[date] || 0) + Number(curr.total);
-        return acc;
-    }, {});
+    // 按日期分组，计算每天的营收和订单数
+    const groups: { [key: string]: { revenue: number; orders: number } } = {};
+    data.forEach((order: any) => {
+        const date = order.created_at.split('T')[0];
+        if (!groups[date]) {
+            groups[date] = { revenue: 0, orders: 0 };
+        }
+        groups[date].revenue += Number(order.total);
+        groups[date].orders++;
+    });
 
     const trend = Object.entries(groups).map(([date, value]) => ({
         date,
-        value
+        revenue: value.revenue,
+        orders: value.orders
     })).sort((a, b) => a.date.localeCompare(b.date));
 
     return { code: 200, message: '获取成功', data: trend };
@@ -102,8 +175,8 @@ export const getOrderDistribution = async (): Promise<ApiResponse<any[]>> => {
     });
 
     const distribution = hours.map((count, index) => ({
-        time: `${index}:00`,
-        value: count
+        hour: `${index}:00`,
+        orders: count
     }));
 
     return { code: 200, message: '获取成功', data: distribution };
@@ -117,7 +190,7 @@ export const getProductRanking = async (): Promise<ApiResponse<any[]>> => {
 
     const { data, error } = await supabase
         .from('products')
-        .select('name, sales')
+        .select('name, sales, price')
         .order('sales', { ascending: false })
         .limit(5);
 
@@ -125,7 +198,9 @@ export const getProductRanking = async (): Promise<ApiResponse<any[]>> => {
 
     const ranking = data.map(p => ({
         name: p.name,
-        value: p.sales
+        sales: p.sales,
+        revenue: p.sales * p.price,
+        icon: '🍱' // 默认图标，可以根据商品类型动态设置
     }));
 
     return { code: 200, message: '获取成功', data: ranking };

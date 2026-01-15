@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ConfigProvider, App as AntApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { LoginPage } from './pages/login/LoginPage';
@@ -13,16 +12,10 @@ import AnalyticsPage from './pages/analytics/AnalyticsPage';
 import CouponManagementPage from './pages/marketing/CouponManagementPage';
 import PromotionManagementPage from './pages/marketing/PromotionManagementPage';
 import StaffManagementPage from './pages/settings/StaffManagementPage';
-import SystemConfigPage from './pages/settings/SystemConfigPage';
 import RoleManagementPage from './pages/settings/RoleManagementPage';
 import PermissionManagementPage from './pages/settings/PermissionManagementPage';
-import { useAuthStore } from './stores/useAuthStore';
-
-// 路由守卫组件
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
-};
+import DepartmentManagementPage from './pages/settings/DepartmentManagementPage';
+import { PermissionGuard } from './utils/permissionGuard';
 
 function App() {
   return (
@@ -42,9 +35,9 @@ function App() {
             <Route
               path="/"
               element={
-                <PrivateRoute>
+                <PermissionGuard>
                   <MainLayout />
-                </PrivateRoute>
+                </PermissionGuard>
               }
             >
               <Route index element={<DashboardPage />} />
@@ -59,9 +52,10 @@ function App() {
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="settings">
                 <Route path="staff" element={<StaffManagementPage />} />
+                <Route path="departments" element={<DepartmentManagementPage />} />
                 <Route path="roles" element={<RoleManagementPage />} />
                 <Route path="permissions" element={<PermissionManagementPage />} />
-                <Route path="config" element={<SystemConfigPage />} />
+
               </Route>
             </Route>
           </Routes>

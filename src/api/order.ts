@@ -1,5 +1,6 @@
 import { supabase } from '../utils/supabase';
 import type { Order, OrderStatusType, ApiResponse } from '../types/index';
+import { getUserAccessibleCanteenIds } from '../utils/permissionFilter';
 import {
     mockGetOrders,
     mockGetOrderDetail,
@@ -9,19 +10,33 @@ import {
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
-// 1. 获取订单列表
+// 1. 获取订单列表（支持权限过滤）
 export const getOrders = async (params: {
     page: number;
     pageSize: number;
     status?: OrderStatusType;
     keyword?: string;
+    userId?: string;  // 用于权限过滤
 }) => {
     if (USE_MOCK) return mockGetOrders(params);
 
-    // 重点修改：添加 profiles(*) 获取用户信息
+    // 重点修改：添加 users(*) 获取用户信息
     let query = supabase
         .from('orders')
-        .select('*, canteens(*), profiles(*), order_items(*)', { count: 'exact' });
+        .select('*, canteens(*), users(*), order_items(*)', { count: 'exact' });
+
+    // 权限过滤：根据用户部门限制可查看的订单
+    if (params.userId) {
+        const accessibleCanteenIds = await getUserAccessibleCanteenIds(params.userId);
+        if (accessibleCanteenIds !== null) {
+            if (accessibleCanteenIds.length > 0) {
+                query = query.in('canteen_id', accessibleCanteenIds);
+            } else {
+                // 无权限访问任何食堂的订单
+                return { code: 200, message: '获取成功', data: { list: [], total: 0 } };
+            }
+        }
+    }
 
     if (params.status) query = query.eq('status', params.status);
 
@@ -62,10 +77,10 @@ export const getOrders = async (params: {
 export const getOrderDetail = async (id: string): Promise<ApiResponse<Order>> => {
     if (USE_MOCK) return mockGetOrderDetail(id);
 
-    // 重点修改：添加 order_items(*) 获取商品清单，profiles(*) 获取用户信息
+    // 重点修改：添加 order_items(*) 获取商品清单，users(*) 获取用户信息
     const { data, error } = await supabase
         .from('orders')
-        .select('*, canteens(*), profiles(*), order_items(*)')
+        .select('*, canteens(*), users(*), order_items(*)')
         .eq('id', id)
         .single();
 

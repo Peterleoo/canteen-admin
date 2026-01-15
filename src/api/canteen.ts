@@ -1,5 +1,6 @@
 import { supabase } from '../utils/supabase';
 import type { Canteen, ApiResponse } from '../types/index';
+import { getUserAccessibleCanteenIds } from '../utils/permissionFilter';
 import {
     mockGetCanteens,
     mockGetCanteenDetail,
@@ -11,16 +12,33 @@ import {
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
-// 获取所有食堂
-export const getCanteens = async (): Promise<ApiResponse<Canteen[]>> => {
+// 获取所有食堂（根据用户部门权限过滤）
+export const getCanteens = async (userId?: string): Promise<ApiResponse<Canteen[]>> => {
     if (USE_MOCK) {
         return mockGetCanteens();
     }
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('canteens')
         .select('*')
         .order('created_at', { ascending: false });
+
+    // 如果提供了 userId，应用权限过滤
+    if (userId) {
+        const accessibleCanteenIds = await getUserAccessibleCanteenIds(userId);
+
+        // null 表示超级管理员，可访问所有食堂
+        if (accessibleCanteenIds !== null) {
+            if (accessibleCanteenIds.length > 0) {
+                query = query.in('id', accessibleCanteenIds);
+            } else {
+                // 无权限访问任何食堂，返回空数组
+                return { code: 200, message: '获取成功', data: [] };
+            }
+        }
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         return { code: 500, message: error.message, data: [] };

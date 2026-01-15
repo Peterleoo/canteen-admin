@@ -1,5 +1,6 @@
 import { supabase } from '../utils/supabase';
 import type { Product, Category, ApiResponse, ProductStatus } from '../types/index';
+import { getUserAccessibleCanteenIds } from '../utils/permissionFilter';
 import {
     mockGetProducts,
     mockGetProductDetail,
@@ -11,13 +12,14 @@ import {
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
-// 获取商品列表 (支持分页和筛选)
+// 获取商品列表 (支持分页和筛选，含权限过滤)
 export const getProducts = async (params: {
     page: number;
     pageSize: number;
     keyword?: string;
     category?: Category;
     status?: ProductStatus;
+    userId?: string;  // 用于权限过滤
 }) => {
     if (USE_MOCK) {
         return mockGetProducts(params);
@@ -25,7 +27,20 @@ export const getProducts = async (params: {
 
     let query = supabase
         .from('products')
-        .select('*', { count: 'exact' });
+        .select('*, canteens(*)', { count: 'exact' });  // 关联查询食堂信息
+
+    // 权限过滤：根据用户部门限制可查看的商品
+    if (params.userId) {
+        const accessibleCanteenIds = await getUserAccessibleCanteenIds(params.userId);
+        if (accessibleCanteenIds !== null) {
+            if (accessibleCanteenIds.length > 0) {
+                query = query.in('canteen_id', accessibleCanteenIds);
+            } else {
+                // 无权限访问任何食堂的商品
+                return { code: 200, message: '获取成功', data: { data: [], total: 0 } };
+            }
+        }
+    }
 
     if (params.keyword) {
         query = query.ilike('name', `%${params.keyword}%`);
@@ -59,17 +74,26 @@ export const getProducts = async (params: {
     };
 };
 
-// 获取商品详情
-export const getProductDetail = async (id: string | number): Promise<ApiResponse<Product>> => {
+// 获取商品详情（支持权限过滤）
+export const getProductDetail = async (id: string | number, userId?: string): Promise<ApiResponse<Product>> => {
     if (USE_MOCK) {
         return mockGetProductDetail(String(id));
     }
 
-    const { data, error } = await supabase
+    let query = supabase
         .from('products')
         .select('*')
-        .eq('id', id)
-        .single();
+        .eq('id', id);
+
+    // 权限过滤：如果提供了userId，确保用户只能查看自己有权限的商品
+    if (userId) {
+        const accessibleCanteenIds = await getUserAccessibleCanteenIds(userId);
+        if (accessibleCanteenIds !== null) {
+            query = query.in('canteen_id', accessibleCanteenIds);
+        }
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
         return { code: 500, message: error.message, data: null as any };

@@ -11,7 +11,8 @@ const mockAdminUser: AdminUser = {
     email: 'admin@canteen.com',
     phone: '13800138000',
     status: 'ACTIVE',
-    createdAt: '2024-01-01T00:00:00Z',
+    created_at: '2024-01-01T00:00:00Z',
+    permissions: ['*'], // 添加必需的permissions属性
 };
 
 // Mock 商品数据
@@ -408,10 +409,9 @@ export interface OrderQueryParams {
 }
 
 let mockOrders: Order[] = [
-    {
-        id: 1001,
+    { id: 1001,
         user_id: 'U001',
-        profiles: {
+        users: {
             id: 'U001', username: '张三', phone: '13812345678', email: 'zhangsan@example.com', status: 'ACTIVE', total_orders: 5, total_spent: 260, created_at: '2024-01-01'
         },
         canteen_id: 1,
@@ -426,10 +426,9 @@ let mockOrders: Order[] = [
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     },
-    {
-        id: 1002,
+    { id: 1002,
         user_id: 'U002',
-        profiles: {
+        users: {
             id: 'U002', username: '李四', phone: '13987654321', email: 'lisi@example.com', status: 'ACTIVE', total_orders: 2, total_spent: 80, created_at: '2024-01-02'
         },
         canteen_id: 1,
@@ -445,10 +444,9 @@ let mockOrders: Order[] = [
         created_at: new Date(Date.now() - 3600000).toISOString(),
         updated_at: new Date(Date.now() - 3600000).toISOString(),
     },
-    {
-        id: 1003,
+    { id: 1003,
         user_id: 'U003',
-        profiles: {
+        users: {
             id: 'U003', username: '王五', phone: '13700001111', email: 'wangwu@example.com', status: 'ACTIVE', total_orders: 10, total_spent: 1200, created_at: '2023-12-15'
         },
         canteen_id: 1,
@@ -485,8 +483,8 @@ export const mockGetOrders = (params: OrderQueryParams) => {
             if (keyword) {
                 filtered = filtered.filter(o =>
                     String(o.id).includes(keyword) ||
-                    o.profiles?.phone?.includes(keyword) ||
-                    o.profiles?.username?.includes(keyword)
+                    o.users?.phone?.includes(keyword) ||
+                    o.users?.username?.includes(keyword)
                 );
             }
 
@@ -587,6 +585,7 @@ let mockUsers: User[] = [
         id: 'U001',
         username: '张三',
         email: 'zhangsan@example.com',
+        password: '$2b$10$WO/ZSjQoa0wE1tjsSQkUeOve1.Wt4BDZzdHKJI.VpVwIjCdT0lBbi', // user123
         phone: '13812345678',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ZhangSan',
         status: 'ACTIVE',
@@ -598,6 +597,7 @@ let mockUsers: User[] = [
         id: 'U002',
         username: '李四',
         email: 'lisi@example.com',
+        password: '$2b$10$RhmPhauWxKjIdGkA.7zKQ.YQCDHn5kaskKh2mZgMDhE2DzAPgImWG', // password456
         phone: '13987654321',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LiSi',
         status: 'ACTIVE',
@@ -609,6 +609,7 @@ let mockUsers: User[] = [
         id: 'U003',
         username: '王五',
         email: 'wangwu@example.com',
+        password: '$2b$10$NRCL4gesXJ8I/oR2VohJEeQxBvS3f2fbD9BuC9ygq.eg5GLS8iVhK', // test789
         phone: '13700001111',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=WangWu',
         status: 'BANNED',
@@ -620,6 +621,7 @@ let mockUsers: User[] = [
         id: 'U004',
         username: '赵六',
         email: 'zhaoliu@example.com',
+        password: '$2b$10$ygA6YkxK/6.Z3gD70mQsauAgFhY1JSaxlARrgaOCatha3Ggjknawe', // demo123
         phone: '13566667777',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ZhaoLiu',
         status: 'ACTIVE',
@@ -631,6 +633,7 @@ let mockUsers: User[] = [
         id: 'U005',
         username: '钱七',
         email: 'qianqi@example.com',
+        password: '$2b$10$pRyR4sdjw.dziAuk0JmNmuZA0n8.dtyQcaOvM3dpTd/Jk2WzBlEyy', // admin456
         phone: '18899990000',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=QianQi',
         status: 'ACTIVE',
@@ -663,7 +666,11 @@ export const mockGetUsers = (params: UserQueryParams) => {
             const total = filtered.length;
             const start = (page - 1) * pageSize;
             const end = start + pageSize;
-            const data = filtered.slice(start, end);
+            const data = filtered.slice(start, end).map((user: User) => {
+                // 移除密码字段，保护用户隐私
+                const { password, ...userWithoutPassword } = user;
+                return userWithoutPassword;
+            });
 
             resolve({
                 code: 200,
@@ -685,11 +692,13 @@ export const mockGetUserDetail = (id: string) => {
         setTimeout(() => {
             const user = mockUsers.find(u => u.id === id);
             if (user) {
+                // 移除密码字段，保护用户隐私
+                const { password, ...userWithoutPassword } = user;
                 resolve({
                     code: 200,
                     message: '成功',
                     data: {
-                        ...user,
+                        ...userWithoutPassword,
                         addresses: [
                             { id: 'A001', contactName: user.username, phone: user.phone, area: '万科滨河道', detail: '3号楼201', tag: '家', isDefault: true },
                             { id: 'A002', contactName: user.username, phone: user.phone, area: '财富中心', detail: 'A座3002', tag: '公司', isDefault: false },
@@ -736,34 +745,84 @@ let mockCanteens: Canteen[] = [
         name: '第一学生食堂',
         address: '校园北区学子路 12 号',
         distance: '200m',
+        latitude: 39.9042,
+        longitude: 116.4074,
         status: 'OPEN',
         contact_phone: '010-62771234', // 已修改
         manager: '陈主管',
         capacity: 500,
         current_orders: 42,           // 已修改
+        
+        // 自动化配置
+        is_auto_accept_orders: true,   // 自动接单开关
+        auto_accept_delay: 30,         // 自动接单延迟（秒）
+        
+        // 营业时间
+        weekday_open_time: '08:00',    // 工作日开始时间
+        weekday_close_time: '20:00',   // 工作日结束时间
+        weekend_open_time: '09:00',    // 周末开始时间
+        weekend_close_time: '18:00',   // 周末结束时间
+        
+        // 库存与通知
+        stock_alert_threshold: 50,     // 库存预警阈值
+        is_low_stock_notification: true, // 低库存通知开关
+        notification_phones: ['13800138000'], // 通知手机列表
+        
+        // 配送核心配置
         is_delivery_active: true,     // 已修改 (原 deliveryEnabled)
         delivery_radius: 3,           // 已修改
+        min_delivery_amount: 15,      // 新增：起送价
         delivery_fee: 2.5,            // 已修改
         free_delivery_threshold: 30,  // 已修改
-        min_delivery_amount: 15,      // 新增：起送价
+        
+        // 费用相关补充
         default_packaging_fee: 1.5,   // 新增：打包费
+        
+        // 时间戳
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
     },
     {
         id: '2',
         name: '第二学生食堂 (清真)',
         address: '校园南区友谊路 5 号',
         distance: '800m',
+        latitude: 39.9053,
+        longitude: 116.4085,
         status: 'BUSY',
         contact_phone: '010-62775678', // 已修改
         manager: '穆经理',
         capacity: 300,
         current_orders: 85,           // 已修改
+        
+        // 自动化配置
+        is_auto_accept_orders: true,   // 自动接单开关
+        auto_accept_delay: 45,         // 自动接单延迟（秒）
+        
+        // 营业时间
+        weekday_open_time: '08:30',    // 工作日开始时间
+        weekday_close_time: '20:30',   // 工作日结束时间
+        weekend_open_time: '09:30',    // 周末开始时间
+        weekend_close_time: '18:30',   // 周末结束时间
+        
+        // 库存与通知
+        stock_alert_threshold: 30,     // 库存预警阈值
+        is_low_stock_notification: true, // 低库存通知开关
+        notification_phones: ['13900139000'], // 通知手机列表
+        
+        // 配送核心配置
         is_delivery_active: true,     // 已修改
         delivery_radius: 2,           // 已修改
+        min_delivery_amount: 20,      // 新增
         delivery_fee: 3.0,            // 已修改
         free_delivery_threshold: 50,  // 已修改
-        min_delivery_amount: 20,      // 新增
+        
+        // 费用相关补充
         default_packaging_fee: 2.0,   // 新增
+        
+        // 时间戳
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
     }
 ];
 
@@ -854,6 +913,8 @@ export const mockCreateCanteen = (data: Partial<Canteen>) => {
                 name: data.name || '新食堂',
                 address: data.address || '',
                 distance: '100m',
+                latitude: data.latitude,
+                longitude: data.longitude,
                 status: 'OPEN',
 
                 // --- 风格转换后的字段 ---
@@ -862,15 +923,34 @@ export const mockCreateCanteen = (data: Partial<Canteen>) => {
                 capacity: data.capacity || 0,
                 current_orders: 0,                       // currentOrders -> current_orders
 
+                // --- 自动化配置 ---
+                is_auto_accept_orders: data.is_auto_accept_orders ?? false, // 自动接单开关
+                auto_accept_delay: data.auto_accept_delay || 30,         // 自动接单延迟
+                
+                // --- 营业时间 ---
+                weekday_open_time: data.weekday_open_time || '08:00',    // 工作日开始时间
+                weekday_close_time: data.weekday_close_time || '20:00',   // 工作日结束时间
+                weekend_open_time: data.weekend_open_time || '09:00',    // 周末开始时间
+                weekend_close_time: data.weekend_close_time || '18:00',   // 周末结束时间
+                
+                // --- 库存与通知 ---
+                stock_alert_threshold: data.stock_alert_threshold || 50,     // 库存预警阈值
+                is_low_stock_notification: data.is_low_stock_notification ?? true, // 低库存通知开关
+                notification_phones: data.notification_phones || [], // 通知手机列表
+
                 // --- 配送服务配置 ---
                 is_delivery_active: data.is_delivery_active ?? false, // deliveryEnabled -> is_delivery_active
                 delivery_radius: data.delivery_radius || 1,           // deliveryRadius -> delivery_radius
                 delivery_fee: data.delivery_fee || 0,                 // deliveryFee -> delivery_fee
-                free_delivery_threshold: data.free_delivery_threshold || 0, // 修正拼写
+                free_delivery_threshold: data.free_delivery_threshold || 0, // 免配送费阈值
 
                 // --- 新增业务字段 ---
                 min_delivery_amount: data.min_delivery_amount || 0,      // 新发起送价
                 default_packaging_fee: data.default_packaging_fee || 0,  // 新增打包费
+                
+                // --- 时间戳 ---
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
             };
 
             mockCanteens.push(newCanteen);
@@ -911,19 +991,42 @@ export const mockDeleteCanteen = (id: string) => {
 // 累计统计
 export const mockGetOverviewStats = () => {
     return new Promise<any>((resolve) => {
+        // 生成随机的今日数据
+        const todayRevenue = Math.round((Math.random() * 5000 + 10000) * 100) / 100;
+        const todayOrders = Math.floor(Math.random() * 200 + 300);
+        const newUsers = Math.floor(Math.random() * 30 + 20);
+        const avgOrderValue = Math.round((todayRevenue / todayOrders) * 10) / 10;
+        
+        // 基于今日数据生成昨日数据（模拟5%-15%的波动）
+        const revenueBase = todayRevenue / (1 + (Math.random() * 0.1 + 0.05) * (Math.random() > 0.5 ? 1 : -1));
+        const ordersBase = todayOrders / (1 + (Math.random() * 0.1 + 0.05) * (Math.random() > 0.5 ? 1 : -1));
+        const usersBase = newUsers / (1 + (Math.random() * 0.1 + 0.05) * (Math.random() > 0.5 ? 1 : -1));
+        const avgBase = revenueBase / ordersBase;
+        
+        // 计算环比值（保留一位小数）
+        const calculateChange = (current: number, previous: number): number => {
+            if (previous === 0) return 0;
+            return Math.round(((current - previous) / previous) * 1000) / 10;
+        };
+        
+        const revenueChange = calculateChange(todayRevenue, revenueBase);
+        const orderChange = calculateChange(todayOrders, ordersBase);
+        const userChange = calculateChange(newUsers, usersBase);
+        const avgChange = calculateChange(avgOrderValue, avgBase);
+        
         setTimeout(() => {
             resolve({
                 code: 200,
                 message: '成功',
                 data: {
-                    todayRevenue: 12580.50,
-                    revenueChange: 12.5, // 环比增长
-                    todayOrders: 458,
-                    orderChange: 8.2,
-                    newUsers: 45,
-                    userChange: -2.3,
-                    avgOrderValue: 27.5,
-                    avgChange: 4.1
+                    todayRevenue,
+                    revenueChange,
+                    todayOrders,
+                    orderChange,
+                    newUsers,
+                    userChange,
+                    avgOrderValue,
+                    avgChange
                 }
             });
         }, 500);
@@ -1193,15 +1296,6 @@ let mockStaffs: any[] = [
     }
 ];
 
-let mockSystemConfig = {
-    business_hours: ['08:00', '20:00'],
-    delivery_fee: 5,
-    free_delivery_threshold: 30,
-    stock_alert_threshold: 20,
-    auto_accept_order: true,
-    maintenance_mode: false
-};
-
 // 获取员工列表
 export const mockGetStaffs = () => {
     return new Promise<any>((resolve) => {
@@ -1267,33 +1361,6 @@ export const mockDeleteStaff = (id: string) => {
     });
 };
 
-// 获取系统配置
-export const mockGetSystemConfig = () => {
-    return new Promise<any>((resolve) => {
-        setTimeout(() => {
-            resolve({
-                code: 200,
-                message: '成功',
-                data: mockSystemConfig
-            });
-        }, 500);
-    });
-};
-
-// 更新系统配置
-export const mockUpdateSystemConfig = (data: any) => {
-    return new Promise<any>((resolve) => {
-        mockSystemConfig = { ...mockSystemConfig, ...data };
-        setTimeout(() => {
-            resolve({
-                code: 200,
-                message: '配置更新成功',
-                data: mockSystemConfig
-            });
-        }, 500);
-    });
-};
-
 // ============ 权限管理相关 Mock ============
 
 let mockPermissions: any[] = [
@@ -1313,7 +1380,7 @@ let mockPermissions: any[] = [
     { id: 'p8_1', name: '员工管理', code: 'settings:staff', type: 'MENU', parentId: 'p8' },
     { id: 'p8_2', name: '角色管理', code: 'settings:roles', type: 'MENU', parentId: 'p8' },
     { id: 'p8_3', name: '权限管理', code: 'settings:permissions', type: 'MENU', parentId: 'p8' },
-    { id: 'p8_4', name: '系统配置', code: 'settings:config', type: 'MENU', parentId: 'p8' },
+
 
     { id: 'p9', name: '功能操作', code: 'actions:group', type: 'MENU' },
     { id: 'p9_1', name: '食堂增删', code: 'canteen:edit', type: 'ACTION', parentId: 'p9' },
@@ -1448,5 +1515,145 @@ export const mockGetPermissions = () => {
                 data: [...mockPermissions]
             });
         }, 300);
+    });
+};
+
+// ============ 部门管理相关 Mock ============
+
+import type { Department } from '../types/index';
+
+let mockDepartments: Department[] = [
+    {
+        id: 'DEPT001',
+        name: '运营部',
+        description: '负责日常运营和管理',
+        status: 'ACTIVE',
+        created_at: '2024-01-01T00:00:00Z',
+        canteen_ids: ['1']
+    },
+    {
+        id: 'DEPT002',
+        name: '销售部',
+        description: '负责市场拓展和销售',
+        status: 'ACTIVE',
+        created_at: '2024-01-02T00:00:00Z',
+        canteen_ids: ['2']
+    },
+    {
+        id: 'DEPT003',
+        name: '技术部',
+        description: '负责系统开发和维护',
+        status: 'ACTIVE',
+        created_at: '2024-01-03T00:00:00Z',
+        canteen_ids: ['1', '2']
+    }
+];
+
+// 获取部门列表
+export const mockGetDepartments = () => {
+    return new Promise<any>((resolve) => {
+        setTimeout(() => {
+            resolve({
+                code: 200,
+                message: '获取成功',
+                data: mockDepartments,
+            });
+        }, 500);
+    });
+};
+
+// 获取部门详情
+export const mockGetDepartmentDetail = (id: string) => {
+    return new Promise<any>((resolve, reject) => {
+        setTimeout(() => {
+            const dept = mockDepartments.find(d => d.id === id);
+            if (dept) {
+                resolve({
+                    code: 200,
+                    message: '获取成功',
+                    data: {
+                        ...dept,
+                        canteens: dept.canteen_ids?.map(cid =>
+                            mockCanteens.find(c => c.id === cid)
+                        ).filter(Boolean) || []
+                    },
+                });
+            } else {
+                reject({
+                    code: 404,
+                    message: '部门不存在',
+                });
+            }
+        }, 300);
+    });
+};
+
+// 创建部门
+export const mockCreateDepartment = (data: Partial<Department>) => {
+    return new Promise<any>((resolve) => {
+        setTimeout(() => {
+            const newDept: Department = {
+                id: 'DEPT' + Date.now(),
+                name: data.name!,
+                description: data.description,
+                status: data.status || 'ACTIVE',
+                created_at: new Date().toISOString(),
+                canteen_ids: []
+            };
+            mockDepartments.unshift(newDept);
+            resolve({
+                code: 200,
+                message: '创建成功',
+                data: newDept,
+            });
+        }, 500);
+    });
+};
+
+// 更新部门
+export const mockUpdateDepartment = (id: string, data: Partial<Department>) => {
+    return new Promise<any>((resolve, reject) => {
+        setTimeout(() => {
+            const index = mockDepartments.findIndex(d => d.id === id);
+            if (index !== -1) {
+                mockDepartments[index] = {
+                    ...mockDepartments[index],
+                    ...data,
+                    updated_at: new Date().toISOString(),
+                };
+                resolve({
+                    code: 200,
+                    message: '更新成功',
+                    data: mockDepartments[index],
+                });
+            } else {
+                reject({
+                    code: 404,
+                    message: '部门不存在',
+                });
+            }
+        }, 500);
+    });
+};
+
+// 删除部门
+export const mockDeleteDepartment = (id: string) => {
+    return new Promise<any>((resolve, reject) => {
+        setTimeout(() => {
+            const index = mockDepartments.findIndex(d => d.id === id);
+            if (index !== -1) {
+                mockDepartments.splice(index, 1);
+                resolve({
+                    code: 200,
+                    message: '删除成功',
+                    data: null,
+                });
+            } else {
+                reject({
+                    code: 404,
+                    message: '部门不存在',
+                });
+            }
+        }, 500);
     });
 };

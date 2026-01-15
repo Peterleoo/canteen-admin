@@ -112,7 +112,13 @@ const RoleManagementPage: React.FC = () => {
 
     const handleEditPermissions = (role: RoleConfig) => {
         setCurrentRole(role);
-        setCheckedKeys(role.permissions);
+        // 关键点：确保 role.permissions 是一个纯字符串数组
+        // 如果 role.permissions 是 null 或 undefined，初始化为空数组
+        const initialKeys = Array.isArray(role.permissions) ? role.permissions : [];
+
+        console.log('当前角色拥有的权限ID:', initialKeys); // 调试用
+
+        setCheckedKeys(initialKeys);
         setDrawerVisible(true);
     };
 
@@ -131,9 +137,13 @@ const RoleManagementPage: React.FC = () => {
         }
     };
 
-    const formatTreeData = (data: Permission[], parentId?: string): any[] => {
+    const formatTreeData = (data: Permission[], parentId?: string | null): any[] => {
         return data
-            .filter(item => item.parentId === parentId)
+            .filter(item => {
+                const itemParent = item.parentId || null;
+                const targetParent = parentId || null;
+                return itemParent === targetParent;
+            })
             .map(item => ({
                 title: item.name,
                 key: item.id,
@@ -237,7 +247,12 @@ const RoleManagementPage: React.FC = () => {
                 <Tree
                     checkable
                     defaultExpandAll
-                    onCheck={(keys: any) => setCheckedKeys(keys)}
+                    // 确保处理 keys 对象
+                    onCheck={(keys: any) => {
+                        // 兼容处理：如果是对象则取其 checked 属性，如果是数组则直接使用
+                        const newKeys = Array.isArray(keys) ? keys : keys.checked;
+                        setCheckedKeys(newKeys);
+                    }}
                     checkedKeys={checkedKeys}
                     treeData={treeData}
                 />

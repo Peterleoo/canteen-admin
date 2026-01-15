@@ -70,6 +70,9 @@ export interface Product {
     sort_order?: number;      // 改为下划线
     created_at?: string;      // 改为下划线
     updated_at?: string;      // 改为下划线
+    // 食堂关联
+    canteen_id?: string;      // 所属食堂 ID
+    canteen?: Canteen;        // 关联查询时的食堂对象
     // combo_items 这种复杂的关联建议根据实际建表情况调整
 }
 
@@ -83,6 +86,7 @@ export interface User {
     id: string;
     username: string;    // 修复：从 name 改为 username
     email: string;       // 修复：确保有 email 字段
+    password?: string;    // 新增：用于前端app登录验证的密码字段（可选，返回时不包含）
     avatar?: string;
     phone?: string;
     status: 'ACTIVE' | 'BANNED' | 'INACTIVE' | 'active' | 'banned'; // 兼容大小写
@@ -90,6 +94,9 @@ export interface User {
     // 统计字段（可选，根据你的业务逻辑）
     total_orders?: number;
     total_spent?: number;
+    // 部门关联
+    department_id?: string | null;
+    department?: Department | null; // 关联查询时的部门对象
 }
 
 // 地址
@@ -108,7 +115,7 @@ export interface Address {
 export interface Order {
     id: number;              // 数据库中是 integer，所以这里用 number
     user_id: string;         // 对应数据库 user_id (UUID)
-    profiles?: User;         // 对应 Supabase 关联查询 profiles(*) 返回的对象
+    users?: User;            // 对应 Supabase 关联查询 users(*) 返回的对象
     canteen_id: number;      // 对应数据库 canteen_id
     canteens?: Canteen;      // 对应 Supabase 关联查询 canteens(*) 返回的对象
 
@@ -118,9 +125,9 @@ export interface Order {
     // 金额相关（确保与数据库字段名一致）
     // 如果数据库只有 total 字段，则其他字段设为可选或补齐数据库字段
     subtotal?: number;
-    packing_fee?: number;    // 新增：打包费
-    delivery_fee?: number;   // 数据库建议改为 delivery_fee
-    discount_amount?: number;// 新增：优惠金额
+    packaging_fee?: number;  // 打包费（与数据库字段名一致）
+    delivery_fee?: number;   // 配送费
+    discount_amount?: number;// 优惠金额
     total: number;           // 对应数据库 total
 
     status: OrderStatusType;
@@ -152,6 +159,8 @@ export interface Canteen {
     name: string;
     address: string;
     distance?: string; // 距离通常是计算出来的，建议设为可选
+    latitude?: number; // 新增：纬度
+    longitude?: number; // 新增：经度
     status: 'OPEN' | 'CLOSED' | 'BUSY';
 
     // 基础管理信息
@@ -159,6 +168,23 @@ export interface Canteen {
     manager?: string;
     capacity?: number;
     current_orders?: number; // 对应数据库 current_orders
+
+    // --- 自动化配置 ---
+    is_auto_accept_orders: boolean;   // 自动接单开关
+    auto_accept_delay?: number;       // 自动接单延迟（秒）
+
+    // --- 营业时间 ---
+    // 工作日营业时间
+    weekday_open_time: string;        // 工作日开始时间 (HH:MM)
+    weekday_close_time: string;       // 工作日结束时间 (HH:MM)
+    // 周末营业时间
+    weekend_open_time: string;        // 周末开始时间 (HH:MM)
+    weekend_close_time: string;       // 周末结束时间 (HH:MM)
+
+    // --- 库存与通知 ---
+    stock_alert_threshold: number;    // 库存预警阈值
+    is_low_stock_notification: boolean; // 低库存通知开关
+    notification_phones?: string[];   // 通知手机列表
 
     // --- 配送核心配置 ---
     is_delivery_active: boolean;      // 配送服务总开关 (开启/关闭)
@@ -184,7 +210,12 @@ export interface AdminUser {
     email?: string;
     phone?: string;
     status: 'ACTIVE' | 'INACTIVE';
-    createdAt: string;
+    created_at: string;  // 改为 snake_case
+    // 部门关联
+    department_id?: string | null;
+    department?: Department | null; // 关联查询时的部门对象
+    // 权限列表
+    permissions: string[];
 }
 
 // 登录响应
@@ -248,7 +279,7 @@ export interface Coupon {
     usedCount: number;
     status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
     description?: string;
-    createdAt: string;
+    created_at: string;  // 改为 snake_case
 }
 
 // 促销活动
@@ -271,7 +302,7 @@ export interface Permission {
     id: string;
     name: string;
     code: string;
-    type: 'MENU' | 'ACTION';
+    type: 'MENU' | 'BUTTON';  // 修正：数据库中使用 BUTTON 而非 ACTION
     parentId?: string;
     description?: string;
 }
@@ -284,5 +315,25 @@ export interface RoleConfig {
     description?: string;
     permissions: string[]; // 权限 ID 列表
     status: 'ACTIVE' | 'INACTIVE';
-    createdAt: string;
+    created_at: string;  // 改为 snake_case
+}
+
+// 部门
+export interface Department {
+    id: string;
+    name: string;
+    description?: string;
+    status: 'ACTIVE' | 'INACTIVE';
+    created_at: string;
+    updated_at?: string;
+    canteen_ids?: string[]; // 关联的食堂 ID 列表（前端使用）
+    canteens?: Canteen[]; // 关联的食堂对象列表（关联查询）
+}
+
+// 部门与食堂关联
+export interface DepartmentCanteen {
+    id: string;
+    department_id: string;
+    canteen_id: string;
+    created_at: string;
 }

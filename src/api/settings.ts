@@ -1,5 +1,5 @@
 import { supabase } from '../utils/supabase';
-import type { Permission, RoleConfig, ApiResponse } from '../types/index';
+import type { ApiResponse, RoleConfig, Permission, AdminUser } from '../types/index';
 import {
     mockGetRoles,
     mockUpdateRolePermissions,
@@ -7,9 +7,6 @@ import {
     mockCreateRole,
     mockUpdateRole,
     mockDeleteRole,
-    mockGetSystemConfig,
-    mockUpdateSystemConfig,
-    mockGetStaffs,
     mockCreateStaff,
     mockUpdateStaff,
     mockDeleteStaff
@@ -17,19 +14,15 @@ import {
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
-// 获取所有角色
+// 1. 获取所有角色
 export const getRoles = async (): Promise<ApiResponse<RoleConfig[]>> => {
-    if (USE_MOCK) {
-        return mockGetRoles();
-    }
+    if (USE_MOCK) return mockGetRoles();
 
     const { data: roles, error: rolesError } = await supabase
         .from('roles')
         .select('*, role_permissions(permission_id)');
 
-    if (rolesError) {
-        return { code: 500, message: rolesError.message, data: [] };
-    }
+    if (rolesError) return { code: 500, message: rolesError.message, data: [] };
 
     const formattedRoles = roles.map(role => ({
         ...role,
@@ -39,20 +32,16 @@ export const getRoles = async (): Promise<ApiResponse<RoleConfig[]>> => {
     return { code: 200, message: '获取成功', data: formattedRoles };
 };
 
-// 更新角色权限
+// 2. 更新角色权限
 export const updateRolePermissions = async (roleId: string, permissionIds: string[]): Promise<ApiResponse> => {
-    if (USE_MOCK) {
-        return mockUpdateRolePermissions(roleId, permissionIds);
-    }
+    if (USE_MOCK) return mockUpdateRolePermissions(roleId, permissionIds);
 
     const { error: deleteError } = await supabase
         .from('role_permissions')
         .delete()
         .eq('role_id', roleId);
 
-    if (deleteError) {
-        return { code: 500, message: deleteError.message, data: null };
-    }
+    if (deleteError) return { code: 500, message: deleteError.message, data: null };
 
     const newPermissions = permissionIds.map(pid => ({
         role_id: roleId,
@@ -63,38 +52,111 @@ export const updateRolePermissions = async (roleId: string, permissionIds: strin
         const { error: insertError } = await supabase
             .from('role_permissions')
             .insert(newPermissions);
-
-        if (insertError) {
-            return { code: 500, message: insertError.message, data: null };
-        }
+        if (insertError) return { code: 500, message: insertError.message, data: null };
     }
 
     return { code: 200, message: '权限更新成功', data: null };
 };
 
-// 获取所有权限点
+// 3. 获取所有权限点
 export const getPermissions = async (): Promise<ApiResponse<Permission[]>> => {
-    if (USE_MOCK) {
-        return mockGetPermissions();
-    }
+    if (USE_MOCK) return mockGetPermissions();
 
     const { data, error } = await supabase
         .from('permissions')
-        .select('*')
+        .select(`
+            id,
+            name,
+            code,
+            type,
+            description,
+            parentId:parent_id
+        `)
         .order('type', { ascending: false });
 
-    if (error) {
-        return { code: 500, message: error.message, data: [] };
-    }
-
-    return { code: 200, message: '获取成功', data: data as Permission[] };
+    if (error) return { code: 500, message: error.message, data: [] };
+    return { code: 200, message: '获取成功', data: data as any };
 };
+
+// 4. 获取员工列表 (修复后的函数)
+export const getStaffs = async (): Promise<ApiResponse<AdminUser[]>> => {
+    const { data, error } = await supabase
+        .from('staffs')
+        .select(`
+            id,
+            username,
+            name,
+            role,
+            avatar:avatar_url,
+            email,
+            phone,
+            status,
+            created_at,
+            department_id,
+            department:departments (id, name)
+        `)
+        .neq('role', 'USER')
+        .order('created_at', { ascending: false });
+
+    if (error) return { code: 500, message: error.message, data: [] };
+
+    return { code: 200, message: '获取成功', data: data as unknown as AdminUser[] };
+};
+
+// 5. 新增员工
+export const createStaff = async (data: any): Promise<ApiResponse<any>> => {
+    if (USE_MOCK) return mockCreateStaff(data);
+
+    // 适配数据库字段映射
+    const { avatar, ...rest } = data;
+    const payload = {
+        ...rest,
+        avatar_url: avatar,
+        id: crypto.randomUUID() // 测试环境手动分配 ID
+    };
+
+    const { data: newData, error } = await supabase
+        .from('staffs')
+        .insert([payload])
+        .select()
+        .single();
+
+    if (error) return { code: 500, message: error.message, data: null };
+    return { code: 200, message: '创建成功', data: newData };
+};
+
+// 6. 更新员工
+export const updateStaff = async (id: string, data: any): Promise<ApiResponse<any>> => {
+    if (USE_MOCK) return mockUpdateStaff(id, data);
+
+    const { department, avatar, ...cleanData } = data;
+    if (avatar) cleanData.avatar_url = avatar;
+
+    const { data: updatedData, error } = await supabase
+        .from('staffs')
+        .update(cleanData)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) return { code: 500, message: error.message, data: null };
+    return { code: 200, message: '更新成功', data: updatedData };
+};
+
+// 7. 删除员工
+export const deleteStaff = async (id: string): Promise<ApiResponse> => {
+    if (USE_MOCK) return mockDeleteStaff(id);
+    const { error } = await supabase.from('staffs').delete().eq('id', id);
+    if (error) return { code: 500, message: error.message, data: null };
+    return { code: 200, message: '删除成功', data: null };
+};
+
+
+// --- 插入以下代码到 api/settings.ts ---
 
 // 创建角色
 export const createRole = async (data: Partial<RoleConfig>): Promise<ApiResponse<RoleConfig>> => {
-    if (USE_MOCK) {
-        return mockCreateRole(data);
-    }
+    if (USE_MOCK) return mockCreateRole(data);
 
     const { permissions, ...roleData } = data;
 
@@ -104,10 +166,9 @@ export const createRole = async (data: Partial<RoleConfig>): Promise<ApiResponse
         .select()
         .single();
 
-    if (error) {
-        return { code: 500, message: error.message, data: null as any };
-    }
+    if (error) return { code: 500, message: error.message, data: null as any };
 
+    // 如果创建角色时带了权限，关联到中间表
     if (permissions && permissions.length > 0) {
         await updateRolePermissions(newRole.id, permissions);
     }
@@ -117,9 +178,7 @@ export const createRole = async (data: Partial<RoleConfig>): Promise<ApiResponse
 
 // 更新角色
 export const updateRole = async (id: string, data: Partial<RoleConfig>): Promise<ApiResponse<RoleConfig>> => {
-    if (USE_MOCK) {
-        return mockUpdateRole(id, data);
-    }
+    if (USE_MOCK) return mockUpdateRole(id, data);
 
     const { permissions, ...roleData } = data;
 
@@ -130,146 +189,23 @@ export const updateRole = async (id: string, data: Partial<RoleConfig>): Promise
         .select()
         .single();
 
-    if (error) {
-        return { code: 500, message: error.message, data: null as any };
-    }
+    if (error) return { code: 500, message: error.message, data: null as any };
 
     return { code: 200, message: '更新成功', data: { ...updatedRole, permissions: permissions || [] } as RoleConfig };
 };
 
 // 删除角色
 export const deleteRole = async (id: string): Promise<ApiResponse> => {
-    if (USE_MOCK) {
-        return mockDeleteRole(id);
-    }
+    if (USE_MOCK) return mockDeleteRole(id);
 
     const { error } = await supabase
         .from('roles')
         .delete()
         .eq('id', id);
 
-    if (error) {
-        return { code: 500, message: error.message, data: null };
-    }
+    if (error) return { code: 500, message: error.message, data: null };
 
     return { code: 200, message: '删除成功', data: null };
 };
 
-// 获取员工列表
-export const getStaffs = async (): Promise<ApiResponse<any[]>> => {
-    if (USE_MOCK) {
-        return mockGetStaffs();
-    }
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        return { code: 500, message: error.message, data: [] };
-    }
-
-    return { code: 200, message: '获取成功', data: data as any[] };
-};
-
-// 新增员工
-export const createStaff = async (data: any): Promise<ApiResponse<any>> => {
-    if (USE_MOCK) {
-        return mockCreateStaff(data);
-    }
-
-    // 注意：Supabase 生产环境通常使用 Supabase Auth Admin API 创建用户
-    // 这里简单处理为插入 profiles 表（假设用户已在 Auth 系统或仅展示信息）
-    const { data: newData, error } = await supabase
-        .from('profiles')
-        .insert([data])
-        .select()
-        .single();
-
-    if (error) {
-        return { code: 500, message: error.message, data: null };
-    }
-
-    return { code: 200, message: '创建成功', data: newData };
-};
-
-// 更新员工
-export const updateStaff = async (id: string, data: any): Promise<ApiResponse<any>> => {
-    if (USE_MOCK) {
-        return mockUpdateStaff(id, data);
-    }
-
-    const { data: updatedData, error } = await supabase
-        .from('profiles')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-
-    if (error) {
-        return { code: 500, message: error.message, data: null };
-    }
-
-    return { code: 200, message: '更新成功', data: updatedData };
-};
-
-// 删除员工
-export const deleteStaff = async (id: string): Promise<ApiResponse> => {
-    if (USE_MOCK) {
-        return mockDeleteStaff(id);
-    }
-
-    const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
-
-    if (error) {
-        return { code: 500, message: error.message, data: null };
-    }
-
-    return { code: 200, message: '删除成功', data: null };
-};
-
-// 系统配置相关
-export const getSystemConfig = async (): Promise<ApiResponse<any>> => {
-    if (USE_MOCK) {
-        return mockGetSystemConfig();
-    }
-
-    const { data, error } = await supabase
-        .from('system_configs')
-        .select('*');
-
-    if (error) {
-        return { code: 500, message: error.message, data: {} };
-    }
-
-    const config = data.reduce((acc, curr) => {
-        acc[curr.config_key] = curr.config_value;
-        return acc;
-    }, {});
-
-    return { code: 200, message: '获取成功', data: config };
-};
-
-export const updateSystemConfig = async (config: any): Promise<ApiResponse> => {
-    if (USE_MOCK) {
-        return mockUpdateSystemConfig(config);
-    }
-
-    const entries = Object.entries(config).map(([key, value]) => ({
-        config_key: key,
-        config_value: value,
-        updated_at: new Date().toISOString()
-    }));
-
-    for (const entry of entries) {
-        await supabase
-            .from('system_configs')
-            .upsert(entry);
-    }
-
-    return { code: 200, message: '更新成功', data: null };
-};
+// ------------------------------------

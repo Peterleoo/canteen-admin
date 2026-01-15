@@ -17,6 +17,8 @@ import {
     Row,
     Col,
     App,
+    Tabs,
+    Card,
 } from 'antd';
 // 1. 显式引入 Divider 属性类型
 import type { DividerProps } from 'antd';
@@ -27,9 +29,12 @@ import {
     DeleteOutlined,
     EnvironmentOutlined,
     PhoneOutlined,
-    UserOutlined
+    UserOutlined,
+    SettingOutlined,
 } from '@ant-design/icons';
 import { getCanteens, updateCanteen, updateCanteenStatus, createCanteen, deleteCanteen } from '../../api/canteen';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { hasPermission } from '../../utils/rbac';
 import type { Canteen } from '../../types/index';
 
 const { Title, Text } = Typography;
@@ -38,8 +43,13 @@ export const CanteenListPage: React.FC = () => {
     const [canteens, setCanteens] = useState<Canteen[]>([]);
     const [loading, setLoading] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
     const [editingCanteen, setEditingCanteen] = useState<Canteen | null>(null);
+    const [configuringCanteen, setConfiguringCanteen] = useState<Canteen | null>(null);
     const [form] = Form.useForm();
+    const [configForm] = Form.useForm();
+
+    const { user } = useAuthStore();
 
     const loadCanteens = async () => {
         setLoading(true);
@@ -68,14 +78,37 @@ export const CanteenListPage: React.FC = () => {
     };
 
     const handleEdit = (canteen: Canteen) => {
+        // 编辑前先重置表单，避免上次编辑内容的影响
+        form.resetFields();
         setEditingCanteen(canteen);
-        form.setFieldsValue(canteen);
-        setIsEditModalVisible(true);
+        // 使用setTimeout确保表单重置完成后再设置新值
+        setTimeout(() => {
+            form.setFieldsValue(canteen);
+            setIsEditModalVisible(true);
+        }, 0);
     };
 
     const handleAdd = () => {
         setEditingCanteen(null);
-        form.resetFields();
+        // 显式设置新增表单的默认值，确保不读取上次编辑的内容
+        form.setFieldsValue({
+            // 基础信息默认值
+            name: '',
+            address: '',
+            is_delivery_active: true, 
+            status: 'OPEN',
+            // 位置坐标相关默认值
+            latitude: undefined,
+            longitude: undefined,
+            // 其他字段默认值
+            contact_phone: '',
+            manager: '',
+            capacity: 0,
+            delivery_radius: 0,
+            delivery_fee: 0,
+            min_delivery_amount: 0,
+            default_packaging_fee: 0
+        });
         setIsEditModalVisible(true);
     };
 
@@ -115,6 +148,26 @@ export const CanteenListPage: React.FC = () => {
         }
     };
 
+    const handleConfig = (canteen: Canteen) => {
+        setConfiguringCanteen(canteen);
+        configForm.setFieldsValue(canteen);
+        setIsConfigModalVisible(true);
+    };
+
+    const handleConfigUpdate = async () => {
+        try {
+            const values = await configForm.validateFields();
+            if (configuringCanteen) {
+                await updateCanteen(configuringCanteen.id, values);
+                message.success('配置更新成功');
+            }
+            setIsConfigModalVisible(false);
+            loadCanteens();
+        } catch (error) {
+            console.error('配置更新失败:', error);
+        }
+    };
+
     const columns = [
         {
             title: '食堂信息',
@@ -140,9 +193,16 @@ export const CanteenListPage: React.FC = () => {
                     size="small"
                     bordered={false}
                     value={status}
-                    onChange={(value: 'OPEN' | 'CLOSED' | 'BUSY') => handleStatusChange(record.id, value)}
+                    onChange={(value: 'OPEN' | 'CLOSED' | 'BUSY') => {
+                        if (hasPermission(user, 'canteen:edit')) {
+                            handleStatusChange(record.id, value);
+                        } else {
+                            message.warning('您没有权限修改食堂状态');
+                        }
+                    }}
                     dropdownMatchSelectWidth={false}
                     style={{ padding: 0 }}
+                    disabled={!hasPermission(user, 'canteen:edit')}
                 >
                     <Select.Option value="OPEN"><Badge status="success" /> 营业中</Select.Option>
                     <Select.Option value="BUSY"><Badge status="warning" /> 繁忙</Select.Option>
@@ -177,11 +237,18 @@ export const CanteenListPage: React.FC = () => {
         {
             title: '操作',
             key: 'action',
-            width: 150,
+            width: 200,
             render: (_: any, record: Canteen) => (
                 <Space split={<Divider type="vertical" />}>
-                    <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
-                    <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>删除</Button>
+                    {hasPermission(user, 'canteen:edit') && (
+                        <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+                    )}
+                    {hasPermission(user, 'canteen:config') && (
+                        <Button type="link" size="small" icon={<SettingOutlined />} onClick={() => handleConfig(record)}>配置</Button>
+                    )}
+                    {hasPermission(user, 'canteen:delete') && (
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>删除</Button>
+                    )}
                 </Space>
             ),
         },
@@ -195,9 +262,11 @@ export const CanteenListPage: React.FC = () => {
             <div style={{ padding: '24px', background: '#fff', borderRadius: '8px' }}>
                 <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Title level={4} style={{ margin: 0 }}>食堂管理</Title>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                        新增食堂
-                    </Button>
+                    {hasPermission(user, 'canteen:create') && (
+                        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                            新增食堂
+                        </Button>
+                    )}
                 </div>
 
                 <Table
@@ -216,14 +285,22 @@ export const CanteenListPage: React.FC = () => {
                     title={editingCanteen ? `编辑 - ${editingCanteen.name}` : '新增食堂'}
                     open={isEditModalVisible}
                     onOk={handleUpdate}
-                    onCancel={() => setIsEditModalVisible(false)}
+                    onCancel={() => {
+                        // 关闭时重置表单，确保下次打开时是干净的
+                        setIsEditModalVisible(false);
+                        form.resetFields();
+                    }}
+                    afterClose={() => {
+                        // 完全关闭后重置editingCanteen状态
+                        setEditingCanteen(null);
+                    }}
                     width={650}
                     destroyOnClose
                 >
                     <Form
                         form={form}
                         layout="vertical"
-                        initialValues={editingCanteen || { is_delivery_active: true, status: 'OPEN' }}
+                        initialValues={editingCanteen || {}}
                     >
                         {/* 强制断言解决类型报错 */}
                         <Divider orientation={dividerOrientation}>基础信息</Divider>
@@ -253,6 +330,34 @@ export const CanteenListPage: React.FC = () => {
                             <Col span={12}>
                                 <Form.Item name="capacity" label="容纳上限">
                                     <InputNumber style={{ width: '100%' }} min={0} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        
+                        <Divider orientation={dividerOrientation}>位置坐标</Divider>
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item name="latitude" label="纬度" rules={[{ type: 'number', min: -90, max: 90, message: '纬度范围为-90到90' }]}>
+                                    <InputNumber 
+                                        style={{ width: '100%' }} 
+                                        placeholder="例如：39.9042" 
+                                        min={-90} 
+                                        max={90} 
+                                        step={0.0001} 
+                                        precision={6}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item name="longitude" label="经度" rules={[{ type: 'number', min: -180, max: 180, message: '经度范围为-180到180' }]}>
+                                    <InputNumber 
+                                        style={{ width: '100%' }} 
+                                        placeholder="例如：116.4074" 
+                                        min={-180} 
+                                        max={180} 
+                                        step={0.0001} 
+                                        precision={6}
+                                    />
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -287,6 +392,103 @@ export const CanteenListPage: React.FC = () => {
                                 </Form.Item>
                             </Col>
                         </Row>
+                    </Form>
+                </Modal>
+
+                {/* 食堂配置弹窗 */}
+                <Modal
+                    title={configuringCanteen ? `${configuringCanteen.name} - 配置` : '食堂配置'}
+                    open={isConfigModalVisible}
+                    onOk={handleConfigUpdate}
+                    onCancel={() => setIsConfigModalVisible(false)}
+                    width={800}
+                    destroyOnClose
+                >
+                    <Form
+                        form={configForm}
+                        layout="vertical"
+                        initialValues={configuringCanteen || {}}
+                    >
+                        <Tabs defaultActiveKey="automation" size="middle">
+                            {/* 自动化配置 */}
+                            <Tabs.TabPane tab="自动化配置" key="automation">
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item name="is_auto_accept_orders" label="自动接单" valuePropName="checked">
+                                            <Switch />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item name="auto_accept_delay" label="自动接单延迟（秒）">
+                                            <InputNumber style={{ width: '100%' }} min={0} max={300} />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            </Tabs.TabPane>
+
+                            {/* 营业时间 */}
+                            <Tabs.TabPane tab="营业时间" key="hours">
+                                <Card title="工作日营业时间" size="small" style={{ marginBottom: 16 }}>
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Form.Item name="weekday_open_time" label="开始时间">
+                                                <Input placeholder="08:00" />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item name="weekday_close_time" label="结束时间">
+                                                <Input placeholder="20:00" />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </Card>
+                                <Card title="周末营业时间" size="small">
+                                    <Row gutter={16}>
+                                        <Col span={12}>
+                                            <Form.Item name="weekend_open_time" label="开始时间">
+                                                <Input placeholder="09:00" />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item name="weekend_close_time" label="结束时间">
+                                                <Input placeholder="18:00" />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </Card>
+                            </Tabs.TabPane>
+
+                            {/* 库存与通知 */}
+                            <Tabs.TabPane tab="库存与通知" key="inventory">
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item name="stock_alert_threshold" label="库存预警阈值">
+                                            <InputNumber style={{ width: '100%' }} min={0} />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={12}>
+                                        <Form.Item name="is_low_stock_notification" label="低库存通知" valuePropName="checked">
+                                            <Switch />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Form.Item
+                                    name="notification_phones"
+                                    label="通知手机列表"
+                                    getValueFromEvent={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                                        return e.target.value.split(',').map((phone: string) => phone.trim()).filter((phone: string) => phone);
+                                    }}
+                                    getValueProps={(value: string[]) => {
+                                        return { value: Array.isArray(value) ? value.join(',') : value };
+                                    }}
+                                >
+                                    <Input.TextArea
+                                        placeholder="请输入手机号码，多个号码用逗号分隔"
+                                        rows={4}
+                                    />
+                                </Form.Item>
+                            </Tabs.TabPane>
+                        </Tabs>
                     </Form>
                 </Modal>
             </div>

@@ -28,17 +28,25 @@ const PermissionManagementPage: React.FC = () => {
         setLoading(true);
         try {
             const res = await getPermissions();
+            console.log('权限数据返回:', res);
+            console.log('权限列表:', res.data);
             setPermissions(res.data);
         } catch (error) {
+            console.error('加载权限失败:', error);
             message.error('加载权限列表失败');
         } finally {
             setLoading(false);
         }
     };
 
-    const formatTreeData = (data: Permission[], parentId?: string): (Permission & { children?: any[] })[] => {
+    const formatTreeData = (data: Permission[], parentId?: string | null): (Permission & { children?: any[] })[] => {
         return data
-            .filter(item => item.parentId === parentId)
+            .filter(item => {
+                // 修复：正确比较 null 和 undefined
+                const itemParent = item.parentId || null;
+                const targetParent = parentId || null;
+                return itemParent === targetParent;
+            })
             .map(item => ({
                 ...item,
                 children: formatTreeData(data, item.id).length > 0 ? formatTreeData(data, item.id) : undefined
@@ -46,6 +54,8 @@ const PermissionManagementPage: React.FC = () => {
     };
 
     const treeData = formatTreeData(permissions);
+    console.log('原始权限数据:', permissions);
+    console.log('树形数据:', treeData);
 
     const columns = [
         {

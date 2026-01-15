@@ -27,11 +27,13 @@ import {
     updateStaff,
     deleteStaff
 } from '../../api/settings';
+import { getDepartments } from '../../api/department';
 
 const { Title, Text } = Typography;
 
 const StaffManagementPage: React.FC = () => {
     const [staffs, setStaffs] = useState<AdminUser[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);  // 部门列表
     const [loading, setLoading] = useState(false);
     const [staffModalVisible, setStaffModalVisible] = useState(false);
     const [editingStaff, setEditingStaff] = useState<AdminUser | null>(null);
@@ -39,17 +41,29 @@ const StaffManagementPage: React.FC = () => {
 
     useEffect(() => {
         fetchData();
+        fetchDepartments();
     }, []);
 
     const fetchData = async () => {
         setLoading(true);
         try {
             const res = await getStaffs();
+            console.log('员工数据:', res);
             setStaffs(res.data);
         } catch (error) {
+            console.error('加载员工数据失败:', error);
             message.error('加载员工数据失败');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchDepartments = async () => {
+        try {
+            const res = await getDepartments();
+            setDepartments(res.data);
+        } catch (error) {
+            console.error('加载部门数据失败', error);
         }
     };
 
@@ -82,6 +96,12 @@ const StaffManagementPage: React.FC = () => {
             render: (role: Role) => (
                 <Tag color={roleMap[role]?.color}>{roleMap[role]?.text}</Tag>
             )
+        },
+        {
+            title: '所属部门',
+            dataIndex: 'department',
+            key: 'department',
+            render: (dept: any) => dept ? <Tag color="cyan">{dept.name}</Tag> : <Tag>未分配</Tag>
         },
         {
             title: '联系方式',
@@ -204,6 +224,13 @@ const StaffManagementPage: React.FC = () => {
                             <Select.Option value="CANTEEN_MANAGER">食堂经理</Select.Option>
                             <Select.Option value="OPERATOR">运营人员</Select.Option>
                             <Select.Option value="VIEWER">查看者</Select.Option>
+                        </Select>
+                    </Form.Item>
+                    <Form.Item name="department_id" label="所属部门">
+                        <Select placeholder="请选择部门" allowClear>
+                            {departments.map(d => (
+                                <Select.Option key={d.id} value={d.id}>{d.name}</Select.Option>
+                            ))}
                         </Select>
                     </Form.Item>
                     <Form.Item name="phone" label="手机号" rules={[{ required: true }]}>

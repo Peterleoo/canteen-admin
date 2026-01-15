@@ -28,7 +28,8 @@ export const getUsers = async (params: UserQueryParams): Promise<ApiResponse<Pag
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase.from('profiles').select('*', { count: 'exact' });
+    // 不返回密码字段，保护用户隐私
+    let query = supabase.from('users').select('id, username, email, avatar, phone, status, created_at, total_orders, total_spent, department_id', { count: 'exact' });
 
     // 如果有关键词，搜索用户名或邮箱
     if (keyword) {
@@ -54,9 +55,10 @@ export const getUserDetail = async (id: string): Promise<ApiResponse<User & { ad
     }
 
     // 假设地址信息存储在 user_addresses 表中，通过外键关联
+    // 不返回密码字段，保护用户隐私
     const { data, error } = await supabase
-        .from('profiles')
-        .select('*, addresses:user_addresses(*)')
+        .from('users')
+        .select('id, username, email, avatar, phone, status, created_at, total_orders, total_spent, department_id, addresses:user_addresses(*)')
         .eq('id', id)
         .single();
 
@@ -70,8 +72,8 @@ export const updateUserStatus = async (id: string, status: 'ACTIVE' | 'INACTIVE'
     }
 
     const { data, error } = await supabase
-        .from('profiles')
-        .update({ status: status.toLowerCase() }) // 确保数据库字段值大小写一致
+        .from('users')
+        .update({ status: status }) // 不再转换为小写，保持与表结构一致
         .eq('id', id)
         .select()
         .single();

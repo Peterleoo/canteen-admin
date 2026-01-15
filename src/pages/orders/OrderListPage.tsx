@@ -7,6 +7,13 @@ const STATUS_TEXT: Record<string, string> = {
     'CANCELLED': '已取消',
 };
 
+// 手机号码隐藏中间4位的辅助函数
+const formatPhoneNumber = (phone?: string) => {
+    if (!phone) return '';
+    if (phone.length !== 11) return phone;
+    return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+};
+
 import React, { useState, useEffect } from 'react';
 import {
     Table,
@@ -30,10 +37,12 @@ import type { ColumnsType } from 'antd/es/table';
 import { getOrders, updateOrderStatus, getOrderDetail } from '../../api/order';
 import { OrderStatus, type Order, type OrderStatusType } from '../../types/index';
 import dayjs from 'dayjs';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 const { Search } = Input;
 
 export const OrderListPage: React.FC = () => {
+    const { user } = useAuthStore();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
@@ -53,6 +62,7 @@ export const OrderListPage: React.FC = () => {
                 pageSize,
                 status: statusFilter,
                 keyword,
+                userId: user?.id,  // 传递userId用于权限过滤
             });
             // 修正：Supabase API 返回的是 list 和 total
             console.log('DEBUG: Fetched orders:', response.data.list); // 添加调试日志
@@ -134,8 +144,10 @@ export const OrderListPage: React.FC = () => {
             width: 180,
             render: (_, record: any) => (
                 <div>
-                    <div style={{ fontWeight: 'bold' }}>{record.profiles?.username || '匿名用户'}</div>
-                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.profiles?.email || '无邮箱'}</div>
+                    <div style={{ fontWeight: 'bold' }}>{record.users?.username || '匿名用户'}</div>
+                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                        {record.users?.phone ? formatPhoneNumber(record.users.phone) : '无手机号码'}
+                    </div>
                 </div>
             ),
         },
@@ -297,26 +309,12 @@ export const OrderListPage: React.FC = () => {
                 width={700}
             >
                 {currentOrder && (() => {
-                    // --- 1. 定义计算逻辑 ---
-                    // 商品小计：通过 reduce 累加 order_items
-                    const itemsSubtotal = (currentOrder as any).order_items?.reduce(
-                        (sum: number, item: any) => sum + (Number(item.price || 0) * (item.quantity || 0)),
-                        0
-                    ) || 0;
-
-                    // 打包费：从食堂配置读取
-                    const packingFee = Number((currentOrder as any).canteens?.default_packaging_fee || 0);
-
-                    // 配送费：外送则读取食堂配置，自提为 0
-                    const deliveryFee = currentOrder.delivery_method === 'DELIVERY'
-                        ? Number((currentOrder as any).canteens?.delivery_fee || 0)
-                        : 0;
-
-                    // 优惠金额
-                    const discountAmount = Number((currentOrder as any).discount_amount || 0);
-
-                    // 实付款汇总计算
-                    const finalTotal = itemsSubtotal + packingFee + deliveryFee - discountAmount;
+                    // 直接使用数据库中已计算好的金额字段
+                    const itemsSubtotal = Number(currentOrder.subtotal || 0);
+                    const packingFee = Number(currentOrder.packaging_fee || 0);
+                    const deliveryFee = Number(currentOrder.delivery_fee || 0);
+                    const discountAmount = Number(currentOrder.discount_amount || 0);
+                    const finalTotal = Number(currentOrder.total || 0);
 
                     return (
                         <div>
@@ -335,8 +333,10 @@ export const OrderListPage: React.FC = () => {
                             <Divider />
 
                             <Descriptions title="用户信息" bordered column={2}>
-                                <Descriptions.Item label="姓名">{(currentOrder as any).profiles?.username || '未知'}</Descriptions.Item>
-                                <Descriptions.Item label="邮箱">{(currentOrder as any).profiles?.email || '无'}</Descriptions.Item>
+                                <Descriptions.Item label="昵称">{(currentOrder as any).users?.username || '未知'}</Descriptions.Item>
+                                <Descriptions.Item label="手机号码">
+                                    {(currentOrder as any).users?.phone ? formatPhoneNumber((currentOrder as any).users.phone) : '无'}
+                                </Descriptions.Item>
                                 {currentOrder.delivery_method === 'DELIVERY' && (
                                     <Descriptions.Item label="配送地址" span={2}>
                                         {(currentOrder as any).address_detail || '暂无详细地址'}
@@ -354,16 +354,9 @@ export const OrderListPage: React.FC = () => {
                                 size="small"
                                 columns={[
                                     { title: '商品', dataIndex: 'product_name', key: 'product_name' },
-                                    {
-                                        title: '单价',
-                                        dataIndex: 'price',
-                                        render: (p) => `¥${Number(p || 0).toFixed(2)}`
-                                    },
+                                    { title: '单价', dataIndex: 'price', render: (p) => `¥${Number(p || 0).toFixed(2)}` },
                                     { title: '数量', dataIndex: 'quantity', key: 'quantity' },
-                                    {
-                                        title: '小计',
-                                        render: (_, r: any) => `¥${(Number(r.price || 0) * (r.quantity || 0)).toFixed(2)}`
-                                    },
+                                    { title: '小计', render: (_, r: any) => `¥${(Number(r.price || 0) * (r.quantity || 0)).toFixed(2)}` },
                                 ]}
                             />
 

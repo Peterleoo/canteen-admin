@@ -21,15 +21,19 @@ import {
     SearchOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import type { Product, Category } from '../../types/index';
+import type { Product, Category, Canteen } from '../../types/index';
 import { getProducts, createProduct, updateProduct, deleteProduct, batchUpdateProductStatus } from '../../api/product';
+import { getCanteens } from '../../api/canteen';
 import { Category as CategoryEnum } from '../../types/index';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 const { Search } = Input;
 const { Option } = Select;
 
 export const ProductListPage: React.FC = () => {
+    const { user } = useAuthStore();
     const [products, setProducts] = useState<Product[]>([]);
+    const [canteens, setCanteens] = useState<Canteen[]>([]);  // 食堂列表
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -43,6 +47,19 @@ export const ProductListPage: React.FC = () => {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [form] = Form.useForm();
 
+    // 加载食堂列表
+    useEffect(() => {
+        const loadCanteens = async () => {
+            try {
+                const res = await getCanteens();
+                setCanteens(res.data);
+            } catch (error) {
+                console.error('加载食堂列表失败', error);
+            }
+        };
+        loadCanteens();
+    }, []);
+
     // 加载商品列表
     const loadProducts = async () => {
         setLoading(true);
@@ -53,6 +70,7 @@ export const ProductListPage: React.FC = () => {
                 keyword,
                 category: categoryFilter,
                 status: statusFilter,
+                userId: user?.id,  // 传递userId用于权限过滤
             });
             setProducts(response.data.data);
             setTotal(response.data.total);
@@ -392,6 +410,18 @@ export const ProductListPage: React.FC = () => {
                         <Select placeholder="请选择商品分类">
                             {Object.values(CategoryEnum).map(cat => (
                                 <Option key={cat} value={cat}>{cat}</Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        label="所属食堂"
+                        name="canteen_id"
+                        rules={[{ required: true, message: '请选择所属食堂' }]}
+                    >
+                        <Select placeholder="请选择所属食堂">
+                            {canteens.map(c => (
+                                <Option key={c.id} value={c.id}>{c.name}</Option>
                             ))}
                         </Select>
                     </Form.Item>
