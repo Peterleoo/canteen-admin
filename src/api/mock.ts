@@ -1,4 +1,4 @@
-import type { AdminUser, Role, Product, Order, DeliveryMethod, User, Canteen, OrderStatusType } from '../types/index';
+import type { AdminUser, Role, Product, Order, DeliveryMethod, User, Canteen, OrderStatusType, Coupon, MarketingBanner, UserCoupon } from '../types/index';
 import { Category, OrderStatus } from '../types/index';
 
 // Mock 管理员用户数据
@@ -409,7 +409,8 @@ export interface OrderQueryParams {
 }
 
 let mockOrders: Order[] = [
-    { id: 1001,
+    {
+        id: 1001,
         user_id: 'U001',
         users: {
             id: 'U001', username: '张三', phone: '13812345678', email: 'zhangsan@example.com', status: 'ACTIVE', total_orders: 5, total_spent: 260, created_at: '2024-01-01'
@@ -426,7 +427,8 @@ let mockOrders: Order[] = [
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     },
-    { id: 1002,
+    {
+        id: 1002,
         user_id: 'U002',
         users: {
             id: 'U002', username: '李四', phone: '13987654321', email: 'lisi@example.com', status: 'ACTIVE', total_orders: 2, total_spent: 80, created_at: '2024-01-02'
@@ -444,7 +446,8 @@ let mockOrders: Order[] = [
         created_at: new Date(Date.now() - 3600000).toISOString(),
         updated_at: new Date(Date.now() - 3600000).toISOString(),
     },
-    { id: 1003,
+    {
+        id: 1003,
         user_id: 'U003',
         users: {
             id: 'U003', username: '王五', phone: '13700001111', email: 'wangwu@example.com', status: 'ACTIVE', total_orders: 10, total_spent: 1200, created_at: '2023-12-15'
@@ -752,32 +755,32 @@ let mockCanteens: Canteen[] = [
         manager: '陈主管',
         capacity: 500,
         current_orders: 42,           // 已修改
-        
+
         // 自动化配置
         is_auto_accept_orders: true,   // 自动接单开关
         auto_accept_delay: 30,         // 自动接单延迟（秒）
-        
+
         // 营业时间
         weekday_open_time: '08:00',    // 工作日开始时间
         weekday_close_time: '20:00',   // 工作日结束时间
         weekend_open_time: '09:00',    // 周末开始时间
         weekend_close_time: '18:00',   // 周末结束时间
-        
+
         // 库存与通知
         stock_alert_threshold: 50,     // 库存预警阈值
         is_low_stock_notification: true, // 低库存通知开关
         notification_phones: ['13800138000'], // 通知手机列表
-        
+
         // 配送核心配置
         is_delivery_active: true,     // 已修改 (原 deliveryEnabled)
         delivery_radius: 3,           // 已修改
         min_delivery_amount: 15,      // 新增：起送价
         delivery_fee: 2.5,            // 已修改
         free_delivery_threshold: 30,  // 已修改
-        
+
         // 费用相关补充
         default_packaging_fee: 1.5,   // 新增：打包费
-        
+
         // 时间戳
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
@@ -794,32 +797,32 @@ let mockCanteens: Canteen[] = [
         manager: '穆经理',
         capacity: 300,
         current_orders: 85,           // 已修改
-        
+
         // 自动化配置
         is_auto_accept_orders: true,   // 自动接单开关
         auto_accept_delay: 45,         // 自动接单延迟（秒）
-        
+
         // 营业时间
         weekday_open_time: '08:30',    // 工作日开始时间
         weekday_close_time: '20:30',   // 工作日结束时间
         weekend_open_time: '09:30',    // 周末开始时间
         weekend_close_time: '18:30',   // 周末结束时间
-        
+
         // 库存与通知
         stock_alert_threshold: 30,     // 库存预警阈值
         is_low_stock_notification: true, // 低库存通知开关
         notification_phones: ['13900139000'], // 通知手机列表
-        
+
         // 配送核心配置
         is_delivery_active: true,     // 已修改
         delivery_radius: 2,           // 已修改
         min_delivery_amount: 20,      // 新增
         delivery_fee: 3.0,            // 已修改
         free_delivery_threshold: 50,  // 已修改
-        
+
         // 费用相关补充
         default_packaging_fee: 2.0,   // 新增
-        
+
         // 时间戳
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
@@ -926,13 +929,13 @@ export const mockCreateCanteen = (data: Partial<Canteen>) => {
                 // --- 自动化配置 ---
                 is_auto_accept_orders: data.is_auto_accept_orders ?? false, // 自动接单开关
                 auto_accept_delay: data.auto_accept_delay || 30,         // 自动接单延迟
-                
+
                 // --- 营业时间 ---
                 weekday_open_time: data.weekday_open_time || '08:00',    // 工作日开始时间
                 weekday_close_time: data.weekday_close_time || '20:00',   // 工作日结束时间
                 weekend_open_time: data.weekend_open_time || '09:00',    // 周末开始时间
                 weekend_close_time: data.weekend_close_time || '18:00',   // 周末结束时间
-                
+
                 // --- 库存与通知 ---
                 stock_alert_threshold: data.stock_alert_threshold || 50,     // 库存预警阈值
                 is_low_stock_notification: data.is_low_stock_notification ?? true, // 低库存通知开关
@@ -947,7 +950,7 @@ export const mockCreateCanteen = (data: Partial<Canteen>) => {
                 // --- 新增业务字段 ---
                 min_delivery_amount: data.min_delivery_amount || 0,      // 新发起送价
                 default_packaging_fee: data.default_packaging_fee || 0,  // 新增打包费
-                
+
                 // --- 时间戳 ---
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
@@ -996,24 +999,24 @@ export const mockGetOverviewStats = () => {
         const todayOrders = Math.floor(Math.random() * 200 + 300);
         const newUsers = Math.floor(Math.random() * 30 + 20);
         const avgOrderValue = Math.round((todayRevenue / todayOrders) * 10) / 10;
-        
+
         // 基于今日数据生成昨日数据（模拟5%-15%的波动）
         const revenueBase = todayRevenue / (1 + (Math.random() * 0.1 + 0.05) * (Math.random() > 0.5 ? 1 : -1));
         const ordersBase = todayOrders / (1 + (Math.random() * 0.1 + 0.05) * (Math.random() > 0.5 ? 1 : -1));
         const usersBase = newUsers / (1 + (Math.random() * 0.1 + 0.05) * (Math.random() > 0.5 ? 1 : -1));
         const avgBase = revenueBase / ordersBase;
-        
+
         // 计算环比值（保留一位小数）
         const calculateChange = (current: number, previous: number): number => {
             if (previous === 0) return 0;
             return Math.round(((current - previous) / previous) * 1000) / 10;
         };
-        
+
         const revenueChange = calculateChange(todayRevenue, revenueBase);
         const orderChange = calculateChange(todayOrders, ordersBase);
         const userChange = calculateChange(newUsers, usersBase);
         const avgChange = calculateChange(avgOrderValue, avgBase);
-        
+
         setTimeout(() => {
             resolve({
                 code: 200,
@@ -1092,74 +1095,84 @@ export const mockGetProductRanking = () => {
 
 // ============ 营销管理相关 Mock ============
 
-let mockCoupons: any[] = [
+let mockCoupons: Coupon[] = [
     {
         id: 'cp1',
+        canteen_id: '1',
         name: '新人立减券',
-        type: 'CASH',
-        value: 5,
-        minAmount: 20,
-        validFrom: '2026-01-01',
-        validTo: '2026-12-31',
-        totalCount: 1000,
-        usedCount: 156,
-        status: 'ACTIVE',
         description: '全场通用，限新用户首次下单使用',
-        createdAt: '2026-01-01 10:00:00'
+        type: 'FIXED',
+        value: 5,
+        min_spend: 20,
+        start_at: '2026-01-01T00:00:00Z',
+        end_at: '2026-12-31T23:59:59Z',
+        total_stock: 1000,
+        used_count: 156,
+        received_count: 200,
+        status: 'ACTIVE',
+        created_at: '2026-01-01T10:00:00Z'
     },
     {
         id: 'cp2',
+        canteen_id: '1',
         name: '下午茶8折优惠',
-        type: 'DISCOUNT',
-        value: 0.8,
-        minAmount: 15,
-        validFrom: '2026-01-01',
-        validTo: '2026-03-31',
-        totalCount: 500,
-        usedCount: 89,
-        status: 'ACTIVE',
         description: '限14:00-17:00使用，饮品类可用',
-        createdAt: '2026-01-05 14:30:00'
-    },
-    {
-        id: 'cp3',
-        name: '免配送费券',
-        type: 'FREE_DELIVERY',
-        value: 5,
-        minAmount: 30,
-        validFrom: '2026-01-01',
-        validTo: '2026-06-30',
-        totalCount: 2000,
-        usedCount: 450,
+        type: 'PERCENT',
+        value: 0.8,
+        min_spend: 15,
+        start_at: '2026-01-01T00:00:00Z',
+        end_at: '2026-03-31T23:59:59Z',
+        total_stock: 500,
+        used_count: 89,
+        received_count: 120,
         status: 'ACTIVE',
-        description: '限外卖订单使用',
-        createdAt: '2026-01-02 09:15:00'
+        created_at: '2026-01-05T14:30:00Z'
     }
 ];
 
-let mockPromotions: any[] = [
+let mockMarketingBanners: MarketingBanner[] = [
     {
         id: 'pm1',
+        canteen_id: '1',
         title: '冬季暖心系列',
-        subtitle: '多款热饮买一送一',
-        image: 'https://images.unsplash.com/photo-1544787210-282bb050519c?w=800',
-        type: 'BANNER',
-        link: '/products?category=饮品',
+        subtitle: '匠心好味道，严选食材新鲜每一天',
+        image_url: 'https://images.unsplash.com/photo-1544787210-282bb050519c?w=800',
+        action_type: 'CATEGORY',
+        action_value: '饮品',
         status: 'ACTIVE',
         sort_order: 1,
-        createdAt: '2026-01-01 08:00:00'
+        created_at: '2026-01-01T08:00:00Z'
     },
     {
         id: 'pm2',
+        canteen_id: '1',
         title: '周三会员日',
-        subtitle: '全场菜品双倍积分',
-        image: 'https://images.unsplash.com/photo-155524362d-1621351c96da?w=800',
-        type: 'ACTIVITY',
+        subtitle: '全场商品 8.8 折起，欢迎选购',
+        image_url: 'https://images.unsplash.com/photo-155524362d-1621351c96da?w=800',
+        action_type: 'NONE',
         status: 'ACTIVE',
         sort_order: 2,
-        startTime: '2026-01-01 00:00:00',
-        endTime: '2026-12-31 23:59:59',
-        createdAt: '2026-01-01 00:00:00'
+        created_at: '2026-01-01T00:00:00Z'
+    }
+];
+
+let mockUserCoupons: UserCoupon[] = [
+    {
+        id: 'uc1',
+        user_id: 'U001',
+        coupon_id: 'cp1',
+        status: 'USED',
+        received_at: '2026-01-10T08:00:00Z',
+        used_at: '2026-01-12T12:00:00Z',
+        expires_at: '2026-12-31T23:59:59Z',
+    },
+    {
+        id: 'uc2',
+        user_id: 'U002',
+        coupon_id: 'cp1',
+        status: 'UNUSED',
+        received_at: '2026-01-12T09:00:00Z',
+        expires_at: '2026-12-31T23:59:59Z',
     }
 ];
 
@@ -1176,18 +1189,53 @@ export const mockGetCoupons = () => {
     });
 };
 
-// 创建优惠券
-export const mockCreateCoupon = (data: any) => {
+// 获取海报列表
+export const mockGetBanners = () => {
     return new Promise<any>((resolve) => {
-        const newCoupon = {
-            ...data,
-            id: 'cp' + (mockCoupons.length + 1),
-            usedCount: 0,
-            status: 'ACTIVE',
-            createdAt: new Date().toLocaleString()
-        };
-        mockCoupons.unshift(newCoupon);
         setTimeout(() => {
+            resolve({
+                code: 200,
+                message: '成功',
+                data: [...mockMarketingBanners]
+            });
+        }, 500);
+    });
+};
+
+// 创建海报
+export const mockCreateBanner = (data: Partial<MarketingBanner>) => {
+    return new Promise<any>((resolve) => {
+        setTimeout(() => {
+            const newBanner: MarketingBanner = {
+                ...data,
+                id: 'pm' + (mockMarketingBanners.length + 1),
+                status: data.status || 'ACTIVE',
+                sort_order: data.sort_order || 0,
+                created_at: new Date().toISOString()
+            } as MarketingBanner;
+            mockMarketingBanners.unshift(newBanner);
+            resolve({
+                code: 200,
+                message: '创建成功',
+                data: newBanner
+            });
+        }, 500);
+    });
+};
+
+// 创建优惠券
+export const mockCreateCoupon = (data: Partial<Coupon>) => {
+    return new Promise<any>((resolve) => {
+        setTimeout(() => {
+            const newCoupon: Coupon = {
+                ...data,
+                id: 'cp' + (mockCoupons.length + 1),
+                used_count: 0,
+                received_count: 0,
+                status: 'ACTIVE',
+                created_at: new Date().toISOString()
+            } as Coupon;
+            mockCoupons.unshift(newCoupon);
             resolve({
                 code: 200,
                 message: '创建成功',
@@ -1198,61 +1246,98 @@ export const mockCreateCoupon = (data: any) => {
 };
 
 // 更新优惠券
-export const mockUpdateCoupon = (id: string, data: any) => {
-    return new Promise<any>((resolve) => {
-        const index = mockCoupons.findIndex(c => c.id === id);
-        if (index !== -1) {
-            mockCoupons[index] = { ...mockCoupons[index], ...data };
-        }
+export const mockUpdateCoupon = (id: string, data: Partial<Coupon>) => {
+    return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            resolve({
-                code: 200,
-                message: '更新成功',
-                data: mockCoupons[index]
-            });
+            const index = mockCoupons.findIndex(c => c.id === id);
+            if (index !== -1) {
+                mockCoupons[index] = { ...mockCoupons[index], ...data };
+                resolve({
+                    code: 200,
+                    message: '更新成功',
+                    data: mockCoupons[index]
+                });
+            } else {
+                reject({ code: 404, message: '优惠券不存在' });
+            }
         }, 500);
     });
 };
 
 // 删除优惠券
 export const mockDeleteCoupon = (id: string) => {
-    return new Promise<any>((resolve) => {
-        mockCoupons = mockCoupons.filter(c => c.id !== id);
+    return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            resolve({
-                code: 200,
-                message: '删除成功',
-                data: null
-            });
+            const index = mockCoupons.findIndex(c => c.id === id);
+            if (index !== -1) {
+                mockCoupons.splice(index, 1);
+                resolve({ code: 200, message: '删除成功', data: null });
+            } else {
+                reject({ code: 404, message: '优惠券不存在' });
+            }
         }, 500);
     });
 };
 
-// 获取促销列表
-export const mockGetPromotions = () => {
+// 更新海报内容
+export const mockUpdateBanner = (id: string, data: Partial<MarketingBanner>) => {
+    return new Promise<any>((resolve, reject) => {
+        setTimeout(() => {
+            const index = mockMarketingBanners.findIndex(p => p.id === id);
+            if (index !== -1) {
+                mockMarketingBanners[index] = { ...mockMarketingBanners[index], ...data };
+                resolve({
+                    code: 200,
+                    message: '更新成功',
+                    data: mockMarketingBanners[index]
+                });
+            } else {
+                reject({ code: 404, message: '海报不存在' });
+            }
+        }, 500);
+    });
+};
+
+// 删除海报
+export const mockDeleteBanner = (id: string) => {
+    return new Promise<any>((resolve, reject) => {
+        setTimeout(() => {
+            const index = mockMarketingBanners.findIndex(p => p.id === id);
+            if (index !== -1) {
+                mockMarketingBanners.splice(index, 1);
+                resolve({ code: 200, message: '删除成功', data: null });
+            } else {
+                reject({ code: 404, message: '海报不存在' });
+            }
+        }, 500);
+    });
+};
+
+// 为了向下兼容，保留 Promotion 相关的 Mock 别名
+export const mockGetPromotions = mockGetBanners;
+export const mockUpdatePromotion = mockUpdateBanner;
+export const mockCreatePromotion = mockCreateBanner;
+export const mockDeletePromotion = mockDeleteBanner;
+
+// 获取用户优惠券记录 (管理员视角)
+export const mockGetUserCouponsForAdmin = (couponId?: string, userId?: string) => {
     return new Promise<any>((resolve) => {
         setTimeout(() => {
+            let data = [...mockUserCoupons];
+            if (couponId) data = data.filter(uc => uc.coupon_id === couponId);
+            if (userId) data = data.filter(uc => uc.user_id === userId);
+
+            // 联表模拟：加上用户信息和优惠券信息
+            const enrichedData = data.map(uc => ({
+                ...uc,
+                user: mockUsers.find(u => u.id === uc.user_id),
+                coupon: mockCoupons.find(c => c.id === uc.coupon_id)
+            }));
+
             resolve({
                 code: 200,
                 message: '成功',
-                data: [...mockPromotions]
-            });
-        }, 500);
-    });
-};
-
-// 更新促销项
-export const mockUpdatePromotion = (id: string, data: any) => {
-    return new Promise<any>((resolve) => {
-        const index = mockPromotions.findIndex(p => p.id === id);
-        if (index !== -1) {
-            mockPromotions[index] = { ...mockPromotions[index], ...data };
-        }
-        setTimeout(() => {
-            resolve({
-                code: 200,
-                message: '更新成功',
-                data: mockPromotions[index]
+                data: enrichedData
             });
         }, 500);
     });

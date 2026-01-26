@@ -263,37 +263,47 @@ export interface ChartData {
     type?: string;
 }
 
-// 优惠券类型
-export type CouponType = 'CASH' | 'DISCOUNT' | 'FREE_DELIVERY';
-
 // 优惠券
 export interface Coupon {
     id: string;
+    canteen_id?: string;
     name: string;
-    type: CouponType;
-    value: number;
-    minAmount: number;
-    validFrom: string;
-    validTo: string;
-    totalCount: number;
-    usedCount: number;
-    status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
     description?: string;
-    created_at: string;  // 改为 snake_case
+    type: 'FIXED' | 'PERCENT';
+    value: number;
+    min_spend: number;
+    start_at: string;
+    end_at: string;
+    total_stock: number;
+    used_count: number;
+    received_count: number;
+    status: 'ACTIVE' | 'INACTIVE';
+    created_at: string;
 }
 
-// 促销活动
-export interface Promotion {
+// 用户持有的优惠券
+export interface UserCoupon {
     id: string;
-    title: string;
+    user_id: string;
+    coupon_id: string;
+    coupon?: Coupon;
+    status: 'UNUSED' | 'USED' | 'EXPIRED';
+    received_at: string;
+    used_at?: string;
+    expires_at: string;
+}
+
+// 活动海报
+export interface MarketingBanner {
+    id: string;
+    canteen_id?: string | null;
+    image_url: string;
+    title?: string;
     subtitle?: string;
-    image: string;
-    type: 'BANNER' | 'ACTIVITY';
-    link?: string;
+    action_type: 'PRODUCT' | 'CATEGORY' | 'URL' | 'NONE';
+    action_value?: string;
     status: 'ACTIVE' | 'INACTIVE';
     sort_order: number;
-    start_time?: string;
-    end_time?: string;
     created_at: string;
 }
 

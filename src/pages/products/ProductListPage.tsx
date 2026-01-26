@@ -47,18 +47,20 @@ export const ProductListPage: React.FC = () => {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [form] = Form.useForm();
 
-    // 加载食堂列表
+    // 加载食堂列表 (应用用户权限过滤)
     useEffect(() => {
         const loadCanteens = async () => {
             try {
-                const res = await getCanteens();
+                const res = await getCanteens(user?.id);
                 setCanteens(res.data);
             } catch (error) {
                 console.error('加载食堂列表失败', error);
             }
         };
-        loadCanteens();
-    }, []);
+        if (user?.id) {
+            loadCanteens();
+        }
+    }, [user?.id]);
 
     // 加载商品列表
     const loadProducts = async () => {
@@ -234,8 +236,19 @@ export const ProductListPage: React.FC = () => {
                 await updateProduct(editingProduct.id, values);
                 message.success('更新成功');
             } else {
-                await createProduct(values);
-                message.success('创建成功');
+                // 如果是新增，且选择了多个食堂，则循环创建
+                const { canteen_id, ...rest } = values;
+                const canteenIds = Array.isArray(canteen_id) ? canteen_id : [canteen_id];
+
+                setLoading(true);
+                try {
+                    await Promise.all(canteenIds.map(cid =>
+                        createProduct({ ...rest, canteen_id: cid })
+                    ));
+                    message.success(`成功在 ${canteenIds.length} 个食堂创建商品`);
+                } finally {
+                    setLoading(false);
+                }
             }
 
             setIsModalVisible(false);
@@ -419,7 +432,10 @@ export const ProductListPage: React.FC = () => {
                         name="canteen_id"
                         rules={[{ required: true, message: '请选择所属食堂' }]}
                     >
-                        <Select placeholder="请选择所属食堂">
+                        <Select
+                            mode={editingProduct ? undefined : "multiple"}
+                            placeholder={editingProduct ? "请选择所属食堂" : "可多选多个食堂同步添加"}
+                        >
                             {canteens.map(c => (
                                 <Option key={c.id} value={c.id}>{c.name}</Option>
                             ))}
